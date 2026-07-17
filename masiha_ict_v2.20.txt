@@ -1,5 +1,5 @@
 //@version=5
-indicator("Masiha ICT (v2.19)", "Masiha ICT v2.19", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+indicator("Masiha ICT (v2.20)", "Masiha ICT v2.20", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 //==============================
 // VIEW / DATE
@@ -46,6 +46,7 @@ showRowM2      = input.bool(true,  "Show M2 row",          group=group_rows)
 showRowM3      = input.bool(true,  "Show M3 row",          group=group_rows)
 showRowWR      = input.bool(true,  "Show WinRate (primary)", group=group_rows)
 showRowWROther = input.bool(false, "Show WinRate (other)",   group=group_rows)
+showRowCases   = input.bool(true,  "Show M1 per-case WinRate rows", group=group_rows)
 
 //==============================
 // METHODS / WR MODE
@@ -56,6 +57,18 @@ useM2          = input.bool(true,  "Method 2 (after valid FVG reaction - 2-candl
 useM3          = input.bool(true,  "Method 3 (after valid FVG reaction - 3-swing)",  group=group_methods)
 minVotes       = input.int(1, "Min votes for consensus", minval=1, maxval=3, group=group_methods)
 
+group_m1c      = "Method 1 - Cases"
+useCaseEngulf  = input.bool(true, "Case: Engulf (body crosses both prev H/L)", group=group_m1c)
+useCaseBreak   = input.bool(true, "Case: Breakout (close beyond prev H/L)",    group=group_m1c)
+useCaseSweep   = input.bool(true, "Case: Sweep (wick beyond, close inside)",   group=group_m1c)
+useCaseInside  = input.bool(true, "Case: Inside bar",                          group=group_m1c)
+sweepLogic     = input.string("Body", "Sweep direction logic", options=["Body","Inverted"], group=group_m1c, tooltip="Body: signal follows the candle body direction. Inverted: sweep of the high is bearish, sweep of the low is bullish (classic liquidity-grab reading).")
+
+group_gate     = "Adaptive Gating"
+useAdaptGate   = input.bool(false, "Gate votes by rolling WinRate", group=group_gate, tooltip="A method's vote only counts while its rolling WinRate stays above the threshold. During warm-up (fewer than Min samples) votes are allowed.")
+gateWRmin      = input.float(55.0, "Min WinRate % to allow votes", minval=0.0, maxval=100.0, step=0.5, group=group_gate)
+gateMinN       = input.int(30, "Min samples (N) before gating applies", minval=1, group=group_gate)
+
 group_wr       = "WinRate"
 wrMode         = input.string("Direction (Close)", "WinRate mode", options=["Direction (Close)","Extreme (Break HL)"], group=group_wr)
 wickInvalid    = input.bool(false, "Invalidate M2 on wick (else close)",   group=group_wr)
@@ -64,7 +77,7 @@ wickInvalid    = input.bool(false, "Invalidate M2 on wick (else close)",   group
 // DOJI tolerance (body vs candle range)
 //==============================
 group_doji = "Doji tolerance"
-dojiPct    = input.float(0.0, "Max body as % of candle range", step=0.1, minval=0.0, maxval=50.0, group=group_doji)
+dojiPct    = input.float(10.0, "Max body as % of candle range", step=0.1, minval=0.0, maxval=50.0, group=group_doji)
 
 //==============================
 // FVG CORE (+ trigger highlight)
@@ -73,6 +86,8 @@ group_fvg_in   = "FVG - Detection"
 showBull       = input.bool(true,  "Bullish FVG (BISI)", group=group_fvg_in)
 showBear       = input.bool(true,  "Bearish FVG (SIBI)", group=group_fvg_in)
 minFvgTicks    = input.int(2,     "Min FVG size (ticks)",             minval=0,   group=group_fvg_in)
+useDispFilter  = input.bool(true, "Require displacement candle", group=group_fvg_in, tooltip="The middle candle of the FVG pattern must have a strong body, showing real momentum behind the gap.")
+dispMinBody    = input.float(60.0, "Min middle-candle body (% of its range)", minval=0.0, maxval=100.0, group=group_fvg_in)
 
 group_fvg_use  = "FVG - Consumption / Extend"
 extendAct      = input.bool(true,  "Extend UNUSED FVGs to the right", group=group_fvg_use)
@@ -80,6 +95,8 @@ ticksNeed      = input.float(1.0,  "Min penetration to mark USED (ticks)", step=
 // NEW: when fully filled, mark USED regardless of penetration threshold
 fullFillOverride = input.bool(true, "Mark USED when fully filled", group=group_fvg_use)
 fullFillTolTicks = input.int(1, "Full-fill tolerance (ticks)", minval=0, group=group_fvg_use)
+useFreshFilter   = input.bool(true, "Only fresh FVGs can trigger M2/M3", group=group_fvg_use, tooltip="A zone older than Max FVG age is still marked USED when touched, but no longer counts as a valid reaction (no M2/M3 trigger, no label).")
+fvgMaxAge        = input.int(50, "Max FVG age for a valid trigger (bars)", minval=1, group=group_fvg_use)
 
 group_fvg_lb   = "FVG - Lookback"
 lookback       = input.int(300, "Scan last N bars (FVG + winrate)", minval=50, maxval=4900, group=group_fvg_lb)
@@ -203,8 +220,11 @@ if array.size(fvgTrigLabel) > 0
 minGap  = syminfo.mintick * minFvgTicks
 gapBull = low - high[2]
 gapBear = low[2] - high
-bull_fvg = gapBull >= minGap
-bear_fvg = gapBear >= minGap
+// Displacement filter: the middle candle of the 3-bar FVG pattern must show momentum
+float midRange = high[1] - low[1]
+bool dispOK = not useDispFilter or (midRange > 0 and math.abs(close[1] - open[1]) >= midRange * dispMinBody / 100.0)
+bull_fvg = gapBull >= minGap and dispOK
+bear_fvg = gapBear >= minGap and dispOK
 
 if bull_fvg and showBull and inSess and inDateWindow(time[2])
     addFVG(1, high[2], low, bar_index - 2, time[2])
@@ -232,7 +252,9 @@ if array.size(fvgBox) > 0
             if (ov >= penetration_px) or (fullFillOverride and fullyFilled)
                 int d = array.get(fvgDir, i)
                 bool disrespect = (d == 1 and close < lb) or (d == -1 and close > ub)
-                bool respected  = not disrespect
+                // Freshness: a stale zone still gets marked USED, but can no longer trigger M2/M3
+                bool fresh      = not useFreshFilter or (bar_index - (array.get(fvgX1, i) + 2)) <= fvgMaxAge
+                bool respected  = not disrespect and fresh
                 array.set(fvgUsed, i, true), array.set(fvgUsedBar, i, bar_index)
                 box bb = array.get(fvgBox, i)
                 if onlyUnused
@@ -280,26 +302,41 @@ dir_up()   => close > open
 //==============================
 // M1 / M2 / M3 signals
 //==============================
-m1_signal_strict() =>
+// Returns [signal, case id]; cases: 0=none, 1=Engulf, 2=Breakout, 3=Sweep, 4=Inside
+m1_signal_case() =>
     float prevH = high[1], prevL = low[1]
-    if isDoji()
-        0
-    else
+    int sig = 0
+    int cs  = 0
+    if not isDoji()
         bool bodyCrossBoth = (open < prevL and close > prevH) or (open > prevH and close < prevL)
+        bool closeInside   = (prevL < close and close < prevH)
+        bool sweepHigh     = (high > prevH) and closeInside
+        bool sweepLow      = (low  < prevL) and closeInside
+        bool insideBar     = (high < prevH) and (low > prevL)
         if bodyCrossBoth
-            dir_up() ? 1 : -1
+            sig := dir_up() ? 1 : -1
+            cs  := 1
         else if close > prevH
-            1
+            sig := 1
+            cs  := 2
         else if close < prevL
-            -1
-        else
-            bool closeInside = (prevL < close and close < prevH)
-            bool sweepHigh   = (high > prevH) and closeInside
-            bool sweepLow    = (low  < prevL) and closeInside
-            bool insideBar   = (high < prevH) and (low > prevL)
-            (sweepHigh or sweepLow or insideBar) ? (dir_up() ? 1 : -1) : 0
+            sig := -1
+            cs  := 2
+        else if sweepHigh or sweepLow
+            cs  := 3
+            if sweepLogic == "Body"
+                sig := dir_up() ? 1 : -1
+            else
+                sig := sweepHigh and sweepLow ? 0 : sweepHigh ? -1 : 1
+        else if insideBar
+            sig := dir_up() ? 1 : -1
+            cs  := 4
+    [sig, cs]
 
-m1_now  = m1_signal_strict()
+[m1_raw, m1_case] = m1_signal_case()
+// Per-case toggles: WinRates are measured on the RAW signal, so a disabled case still shows its stats
+bool m1_case_on = m1_case == 1 ? useCaseEngulf : m1_case == 2 ? useCaseBreak : m1_case == 3 ? useCaseSweep : m1_case == 4 ? useCaseInside : false
+m1_now  = m1_case_on ? m1_raw : 0
 
 // Only the FVG(s) that actually triggered on the PREVIOUS bar can invalidate M2
 prevTrigInvalid() =>
@@ -339,16 +376,96 @@ if drawTrigLabel and nz(reactionCount_bar[1], 0) == 1 and m3_now != 0
                 break
 
 //==============================
-// CONSENSUS + plots
+// SIGNALS (per method, session-filtered)
 //==============================
-// Session filter now gates the signals themselves (not just FVG creation)
+// Session filter gates the signals themselves (not just FVG creation)
 sig1 = useM1 and inSess ? m1_now : 0
 sig2 = useM2 and inSess ? m2_now : 0
 sig3 = useM3 and inSess ? m3_now : 0
-votes   = (sig1 != 0 ? 1 : 0) + (sig2 != 0 ? 1 : 0) + (sig3 != 0 ? 1 : 0)
-sumSig    = sig1 + sig2 + sig3
+
+//==============================
+// WINRATES (rolling) — methods measured on raw signals, before gating
+//==============================
+wrPick(mWinRoll, mTotRoll) => mTotRoll > 0 ? float(mWinRoll) / mTotRoll * 100.0 : na
+int m1_tot_inc = (useM1 and nz(sig1[1]) != 0 and inDatePrev() ? 1 : 0)
+int m2_tot_inc = (useM2 and nz(sig2[1]) != 0 and inDatePrev() ? 1 : 0)
+int m3_tot_inc = (useM3 and nz(sig3[1]) != 0 and inDatePrev() ? 1 : 0)
+m1_tot_cum = ta.cum(m1_tot_inc), m1_tot_roll = m1_tot_cum - nz(m1_tot_cum[lookback])
+m2_tot_cum = ta.cum(m2_tot_inc), m2_tot_roll = m2_tot_cum - nz(m2_tot_cum[lookback])
+m3_tot_cum = ta.cum(m3_tot_inc), m3_tot_roll = m3_tot_cum - nz(m3_tot_cum[lookback])
+
+int m1_win_dir_inc = (useM1 and inDatePrev() and ((nz(sig1[1]) == 1 and close > open) or (nz(sig1[1]) == -1 and close < open)) ? 1 : 0)
+int m2_win_dir_inc = (useM2 and inDatePrev() and ((nz(sig2[1]) == 1 and close > open) or (nz(sig2[1]) == -1 and close < open)) ? 1 : 0)
+int m3_win_dir_inc = (useM3 and inDatePrev() and ((nz(sig3[1]) == 1 and close > open) or (nz(sig3[1]) == -1 and close < open)) ? 1 : 0)
+m1_win_dir_cum = ta.cum(m1_win_dir_inc), m1_win_dir_roll = m1_win_dir_cum - nz(m1_win_dir_cum[lookback])
+m2_win_dir_cum = ta.cum(m2_win_dir_inc), m2_win_dir_roll = m2_win_dir_cum - nz(m2_win_dir_cum[lookback])
+m3_win_dir_cum = ta.cum(m3_win_dir_inc), m3_win_dir_roll = m3_win_dir_cum - nz(m3_win_dir_cum[lookback])
+
+int m1_win_ext_inc = (useM1 and inDatePrev() and ((nz(sig1[1]) == 1 and high > high[1]) or (nz(sig1[1]) == -1 and low < low[1])) ? 1 : 0)
+int m2_win_ext_inc = (useM2 and inDatePrev() and ((nz(sig2[1]) == 1 and high > high[1]) or (nz(sig2[1]) == -1 and low < low[1])) ? 1 : 0)
+int m3_win_ext_inc = (useM3 and inDatePrev() and ((nz(sig3[1]) == 1 and high > high[1]) or (nz(sig3[1]) == -1 and low  < low[1])) ? 1 : 0)
+m1_win_ext_cum = ta.cum(m1_win_ext_inc), m1_win_ext_roll = m1_win_ext_cum - nz(m1_win_ext_cum[lookback])
+m2_win_ext_cum = ta.cum(m2_win_ext_inc), m2_win_ext_roll = m2_win_ext_cum - nz(m2_win_ext_cum[lookback])
+m3_win_ext_cum = ta.cum(m3_win_ext_inc), m3_win_ext_roll = m3_win_ext_cum - nz(m3_win_ext_cum[lookback])
+
+bool showDir = wrMode == "Direction (Close)"
+wrM1 = showDir ? wrPick(m1_win_dir_roll, m1_tot_roll) : wrPick(m1_win_ext_roll, m1_tot_roll)
+wrM2 = showDir ? wrPick(m2_win_dir_roll, m2_tot_roll) : wrPick(m2_win_ext_roll, m2_tot_roll)
+wrM3 = showDir ? wrPick(m3_win_dir_roll, m3_tot_roll) : wrPick(m3_win_ext_roll, m3_tot_roll)
+
+wrM1o = showDir ? wrPick(m1_win_ext_roll, m1_tot_roll) : wrPick(m1_win_dir_roll, m1_tot_roll)
+wrM2o = showDir ? wrPick(m2_win_ext_roll, m2_tot_roll) : wrPick(m2_win_dir_roll, m2_tot_roll)
+wrM3o = showDir ? wrPick(m3_win_ext_roll, m3_tot_roll) : wrPick(m3_win_dir_roll, m3_tot_roll)
+
+//==============================
+// M1 PER-CASE WINRATES (measured on RAW M1, so disabled cases still show stats)
+//==============================
+caseRolls(c) =>
+    bool was = nz(m1_case[1]) == c and nz(m1_raw[1]) != 0 and inDatePrev()
+    int tot_inc = was ? 1 : 0
+    int wd_inc  = was and ((nz(m1_raw[1]) == 1 and close > open)    or (nz(m1_raw[1]) == -1 and close < open))   ? 1 : 0
+    int we_inc  = was and ((nz(m1_raw[1]) == 1 and high > high[1])  or (nz(m1_raw[1]) == -1 and low  < low[1]))  ? 1 : 0
+    float totCum = ta.cum(tot_inc)
+    float wdCum  = ta.cum(wd_inc)
+    float weCum  = ta.cum(we_inc)
+    [totCum - nz(totCum[lookback]), wdCum - nz(wdCum[lookback]), weCum - nz(weCum[lookback])]
+
+[cEngN, cEngWD, cEngWE] = caseRolls(1)
+[cBrkN, cBrkWD, cBrkWE] = caseRolls(2)
+[cSwpN, cSwpWD, cSwpWE] = caseRolls(3)
+[cInsN, cInsWD, cInsWE] = caseRolls(4)
+wrEng = showDir ? wrPick(cEngWD, cEngN) : wrPick(cEngWE, cEngN)
+wrBrk = showDir ? wrPick(cBrkWD, cBrkN) : wrPick(cBrkWE, cBrkN)
+wrSwp = showDir ? wrPick(cSwpWD, cSwpN) : wrPick(cSwpWE, cSwpN)
+wrIns = showDir ? wrPick(cInsWD, cInsN) : wrPick(cInsWE, cInsN)
+
+//==============================
+// ADAPTIVE GATING + CONSENSUS
+//==============================
+// A vote passes while its method's rolling WR is above threshold (warm-up: always passes)
+gateOK(wr, n) => not useAdaptGate or n < gateMinN or (not na(wr) and wr >= gateWRmin)
+sig1v = gateOK(wrM1, m1_tot_roll) ? sig1 : 0
+sig2v = gateOK(wrM2, m2_tot_roll) ? sig2 : 0
+sig3v = gateOK(wrM3, m3_tot_roll) ? sig3 : 0
+votes   = (sig1v != 0 ? 1 : 0) + (sig2v != 0 ? 1 : 0) + (sig3v != 0 ? 1 : 0)
+sumSig    = sig1v + sig2v + sig3v
 consensus = votes >= minVotes ? (sumSig > 0 ? 1 : sumSig < 0 ? -1 : 0) : 0
 
+//==============================
+// CONSENSUS WINRATE (measures the final, gated consensus)
+//==============================
+int cn_tot_inc     = (nz(consensus[1]) != 0 and inDatePrev() ? 1 : 0)
+int cn_win_dir_inc = (inDatePrev() and ((nz(consensus[1]) == 1 and close > open)   or (nz(consensus[1]) == -1 and close < open))  ? 1 : 0)
+int cn_win_ext_inc = (inDatePrev() and ((nz(consensus[1]) == 1 and high > high[1]) or (nz(consensus[1]) == -1 and low < low[1]))  ? 1 : 0)
+cn_tot_cum     = ta.cum(cn_tot_inc),     cn_tot_roll     = cn_tot_cum     - nz(cn_tot_cum[lookback])
+cn_win_dir_cum = ta.cum(cn_win_dir_inc), cn_win_dir_roll = cn_win_dir_cum - nz(cn_win_dir_cum[lookback])
+cn_win_ext_cum = ta.cum(cn_win_ext_inc), cn_win_ext_roll = cn_win_ext_cum - nz(cn_win_ext_cum[lookback])
+wrCn  = showDir ? wrPick(cn_win_dir_roll, cn_tot_roll) : wrPick(cn_win_ext_roll, cn_tot_roll)
+wrCno = showDir ? wrPick(cn_win_ext_roll, cn_tot_roll) : wrPick(cn_win_dir_roll, cn_tot_roll)
+
+//==============================
+// PLOTS + ALERTS
+//==============================
 bool barAllowed   = updateOnClose ? barstate.isconfirmed : true
 bool inHistWindow = bar_index > last_bar_index - histBars
 bool showThisBar  = showHistory ? ((not useDateRange or inDateWindow(time)) and barAllowed and inHistWindow) : barstate.islastconfirmedhistory
@@ -361,48 +478,6 @@ alertcondition(consensus ==  1, "Consensus Bull", "Masiha ICT: next candle predi
 alertcondition(consensus == -1, "Consensus Bear", "Masiha ICT: next candle predicted BEARISH")
 
 //==============================
-// WINRATES (rolling)
-//==============================
-wrPick(mWinRoll, mTotRoll) => mTotRoll > 0 ? float(mWinRoll) / mTotRoll * 100.0 : na
-int m1_tot_inc = (useM1 and nz(sig1[1]) != 0 and inDatePrev() ? 1 : 0)
-int m2_tot_inc = (useM2 and nz(sig2[1]) != 0 and inDatePrev() ? 1 : 0)
-int m3_tot_inc = (useM3 and nz(sig3[1]) != 0 and inDatePrev() ? 1 : 0)
-int cn_tot_inc = (nz(consensus[1]) != 0 and inDatePrev() ? 1 : 0)
-m1_tot_cum = ta.cum(m1_tot_inc), m1_tot_roll = m1_tot_cum - nz(m1_tot_cum[lookback])
-m2_tot_cum = ta.cum(m2_tot_inc), m2_tot_roll = m2_tot_cum - nz(m2_tot_cum[lookback])
-m3_tot_cum = ta.cum(m3_tot_inc), m3_tot_roll = m3_tot_cum - nz(m3_tot_cum[lookback])
-cn_tot_cum = ta.cum(cn_tot_inc), cn_tot_roll = cn_tot_cum - nz(cn_tot_cum[lookback])
-
-int m1_win_dir_inc = (useM1 and inDatePrev() and ((nz(sig1[1]) == 1 and close > open) or (nz(sig1[1]) == -1 and close < open)) ? 1 : 0)
-int m2_win_dir_inc = (useM2 and inDatePrev() and ((nz(sig2[1]) == 1 and close > open) or (nz(sig2[1]) == -1 and close < open)) ? 1 : 0)
-int m3_win_dir_inc = (useM3 and inDatePrev() and ((nz(sig3[1]) == 1 and close > open) or (nz(sig3[1]) == -1 and close < open)) ? 1 : 0)
-int cn_win_dir_inc = (inDatePrev() and ((nz(consensus[1]) == 1 and close > open) or (nz(consensus[1]) == -1 and close < open)) ? 1 : 0)
-m1_win_dir_cum = ta.cum(m1_win_dir_inc), m1_win_dir_roll = m1_win_dir_cum - nz(m1_win_dir_cum[lookback])
-m2_win_dir_cum = ta.cum(m2_win_dir_inc), m2_win_dir_roll = m2_win_dir_cum - nz(m2_win_dir_cum[lookback])
-m3_win_dir_cum = ta.cum(m3_win_dir_inc), m3_win_dir_roll = m3_win_dir_cum - nz(m3_win_dir_cum[lookback])
-cn_win_dir_cum = ta.cum(cn_win_dir_inc), cn_win_dir_roll = cn_win_dir_cum - nz(cn_win_dir_cum[lookback])
-
-int m1_win_ext_inc = (useM1 and inDatePrev() and ((nz(sig1[1]) == 1 and high > high[1]) or (nz(sig1[1]) == -1 and low < low[1])) ? 1 : 0)
-int m2_win_ext_inc = (useM2 and inDatePrev() and ((nz(sig2[1]) == 1 and high > high[1]) or (nz(sig2[1]) == -1 and low < low[1])) ? 1 : 0)
-int m3_win_ext_inc = (useM3 and inDatePrev() and ((nz(sig3[1]) == 1 and high > high[1]) or (nz(sig3[1]) == -1 and low  < low[1])) ? 1 : 0)
-int cn_win_ext_inc = (inDatePrev() and ((nz(consensus[1]) == 1 and high > high[1]) or (nz(consensus[1]) == -1 and low < low[1])) ? 1 : 0)
-m1_win_ext_cum = ta.cum(m1_win_ext_inc), m1_win_ext_roll = m1_win_ext_cum - nz(m1_win_ext_cum[lookback])
-m2_win_ext_cum = ta.cum(m2_win_ext_inc), m2_win_ext_roll = m2_win_ext_cum - nz(m2_win_ext_cum[lookback])
-m3_win_ext_cum = ta.cum(m3_win_ext_inc), m3_win_ext_roll = m3_win_ext_cum - nz(m3_win_ext_cum[lookback])
-cn_win_ext_cum = ta.cum(cn_win_ext_inc), cn_win_ext_roll = cn_win_ext_cum - nz(cn_win_ext_cum[lookback])
-
-bool showDir = wrMode == "Direction (Close)"
-wrM1 = showDir ? wrPick(m1_win_dir_roll, m1_tot_roll) : wrPick(m1_win_ext_roll, m1_tot_roll)
-wrM2 = showDir ? wrPick(m2_win_dir_roll, m2_tot_roll) : wrPick(m2_win_ext_roll, m2_tot_roll)
-wrM3 = showDir ? wrPick(m3_win_dir_roll, m3_tot_roll) : wrPick(m3_win_ext_roll, m3_tot_roll)
-wrCn = showDir ? wrPick(cn_win_dir_roll, cn_tot_roll) : wrPick(cn_win_ext_roll, cn_tot_roll)
-
-wrM1o = showDir ? wrPick(m1_win_ext_roll, m1_tot_roll) : wrPick(m1_win_dir_roll, m1_tot_roll)
-wrM2o = showDir ? wrPick(m2_win_ext_roll, m2_tot_roll) : wrPick(m2_win_dir_roll, m2_tot_roll)
-wrM3o = showDir ? wrPick(m3_win_ext_roll, m3_tot_roll) : wrPick(m3_win_dir_roll, m3_tot_roll)
-wrCno = showDir ? wrPick(cn_win_ext_roll, cn_tot_roll) : wrPick(cn_win_dir_roll, cn_tot_roll)
-
-//==============================
 // TABLE
 //==============================
 posFromString(p) =>
@@ -411,7 +486,7 @@ posFromString(p) =>
      p == "bottom_left" ? position.bottom_left : position.bottom_right
 
 var string lastPos = ""
-int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)
+int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)+(showRowCases?4:0)
 var table  dash    = na
 if barstate.isfirst or na(dash) or dashPos != lastPos
     dash := table.new(posFromString(dashPos), 2, num_rows, border_width=1)
@@ -471,4 +546,17 @@ if doTableUpdate
         r += 1
         setCell(r, 0, "Cons (" + wrModeStr2 + ")", rowBgColor, textColor)
         setCell(r, 1, na(wrCno) ? "-" : str.tostring(wrCno, "#.0") + "% (N=" + str.tostring(cn_tot_roll) + ")", wrCno >= 50 ? bullColor : bearColor, signalTextColor)
+        r += 1
+    if showRowCases
+        setCell(r, 0, "Engulf" + (useCaseEngulf ? "" : " (off)"), rowBgColor, textColor)
+        setCell(r, 1, na(wrEng) ? "-" : str.tostring(wrEng, "#.0") + "% (N=" + str.tostring(cEngN, "#") + ")", wrEng >= 50 ? bullColor : bearColor, signalTextColor)
+        r += 1
+        setCell(r, 0, "Break" + (useCaseBreak ? "" : " (off)"), rowBgColor, textColor)
+        setCell(r, 1, na(wrBrk) ? "-" : str.tostring(wrBrk, "#.0") + "% (N=" + str.tostring(cBrkN, "#") + ")", wrBrk >= 50 ? bullColor : bearColor, signalTextColor)
+        r += 1
+        setCell(r, 0, "Sweep" + (useCaseSweep ? "" : " (off)"), rowBgColor, textColor)
+        setCell(r, 1, na(wrSwp) ? "-" : str.tostring(wrSwp, "#.0") + "% (N=" + str.tostring(cSwpN, "#") + ")", wrSwp >= 50 ? bullColor : bearColor, signalTextColor)
+        r += 1
+        setCell(r, 0, "Inside" + (useCaseInside ? "" : " (off)"), rowBgColor, textColor)
+        setCell(r, 1, na(wrIns) ? "-" : str.tostring(wrIns, "#.0") + "% (N=" + str.tostring(cInsN, "#") + ")", wrIns >= 50 ? bullColor : bearColor, signalTextColor)
         r += 1
