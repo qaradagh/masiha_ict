@@ -1,11 +1,12 @@
 //@version=5
-indicator("Masiha ICT (v2.16)", "Masiha ICT v2.16", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+indicator("Masiha ICT (v2.17)", "Masiha ICT v2.17", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 //==============================
 // VIEW / DATE
 //==============================
 group_view     = "View"
 showHistory    = input.bool(true,  "Show history (off = only last confirmed bar)", group=group_view)
+histBars       = input.int(500,  "History depth (last N candles)", minval=1, maxval=4900, group=group_view)
 updateOnClose  = input.bool(true,  "Update dashboard/arrows only on bar close",   group=group_view)
 
 group_date     = "Date Filter"
@@ -73,16 +74,13 @@ minVotes       = input.int(1, "Min votes for consensus", minval=1, maxval=3, gro
 group_wr       = "WinRate"
 wrMode         = input.string("Direction (Close)", "WinRate mode", options=["Direction (Close)","Extreme (Break HL)"], group=group_wr)
 showBothWR     = input.bool(false, "Also compute the other mode", group=group_wr)
-bodyPct        = input.float(0.00, "Min body %ATR for Direction wins", step=0.01, minval=0.00, group=group_wr)
 wickInvalid    = input.bool(false, "Invalidate M2 on wick (else close)",   group=group_wr)
-invalBars      = input.int(1,      "M2 invalidation window (bars after trigger)", minval=1, maxval=12, group=group_wr)
 
 //==============================
-// DOJI tolerance (ATR-based)
+// DOJI tolerance (body vs candle range)
 //==============================
 group_doji = "Doji tolerance"
-dojiPct    = input.float(0.0, "Max body as % of ATR", step=0.1, minval=0.0, maxval=50.0, group=group_doji)
-dojiATRlen = input.int(14,    "ATR length", minval=1, maxval=200, group=group_doji)
+dojiPct    = input.float(0.0, "Max body as % of candle range", step=0.1, minval=0.0, maxval=50.0, group=group_doji)
 
 //==============================
 // FVG CORE (+ trigger highlight)
@@ -91,21 +89,16 @@ group_fvg_in   = "FVG - Detection"
 showBull       = input.bool(true,  "Bullish FVG (BISI)", group=group_fvg_in)
 showBear       = input.bool(true,  "Bearish FVG (SIBI)", group=group_fvg_in)
 minFvgTicks    = input.int(2,     "Min FVG size (ticks)",             minval=0,   group=group_fvg_in)
-minFvgATR      = input.float(0.00, "Min FVG size (%ATR as 0-1)", step=0.01,  minval=0.00, group=group_fvg_in)
 
 group_fvg_use  = "FVG - Consumption / Extend"
 extendAct      = input.bool(true,  "Extend UNUSED FVGs to the right", group=group_fvg_use)
 ticksNeed      = input.float(1.0,  "Min penetration to mark USED (ticks)", step=0.5, minval=0.5, group=group_fvg_use)
-useATRPen      = input.bool(true, "Use ATR for penetration",           group=group_fvg_use)
-penATRpct      = input.float(0.05,"Penetration size (%ATR as 0-1)",           step=0.01,  minval=0.0, group=group_fvg_use)
 // NEW: when fully filled, mark USED regardless of penetration threshold
 fullFillOverride = input.bool(true, "Mark USED when fully filled", group=group_fvg_use)
 fullFillTolTicks = input.int(1, "Full-fill tolerance (ticks)", minval=0, group=group_fvg_use)
 
 group_fvg_lb   = "FVG - Lookback"
-lookback       = input.int(300, "Scan last N bars (FVG + winrate)", minval=50, maxval=50000, group=group_fvg_lb)
-strictWin      = input.bool(true, "Delete items outside lookback window", group=group_fvg_lb)
-adaptiveLB     = input.bool(false, "Adaptive lookback (scan/cleanup)",   group=group_fvg_lb)
+lookback       = input.int(300, "Scan last N bars (FVG + winrate)", minval=50, maxval=4900, group=group_fvg_lb)
 usedTTL        = input.int(50,     "Remove USED FVG after N bars",     minval=1, group=group_fvg_lb)
 
 group_fvg_vis  = "FVG - Visibility"
@@ -129,7 +122,7 @@ getLblSize() =>
     trigLabelSizeOpt == "Small" ? size.small : trigLabelSizeOpt == "Normal" ? size.normal : size.tiny
 
 //==============================
-// MTF PANEL (<=15m) — M1 only, locked per TF time_close
+// MTF PANEL (<=15m) — M1 only, from last CLOSED bar of each TF (non-repainting)
 //==============================
 group_mtf  = "MTF Panel (<=15m)"
 enableMTF  = input.bool(true, "Enable MTF panel when chart TF <= 15m", group=group_mtf)
@@ -165,9 +158,8 @@ bool canUpdateGfx = not updateOnClose or barstate.isconfirmed
 //==============================
 // Penetration/lookback values
 //==============================
-float penetration_px = useATRPen ? (ta.atr(dojiATRlen) * penATRpct) : (syminfo.mintick * ticksNeed)
-int effLookback = adaptiveLB ? (timeframe.in_seconds() <= timeframe.in_seconds("15") ? 2000 : timeframe.in_seconds() <= timeframe.in_seconds("60") ? 5000 : timeframe.in_seconds() <= timeframe.in_seconds("D") ? 8000 : 12000) : lookback
-int   oldest = math.max(0, bar_index - effLookback)
+float penetration_px = syminfo.mintick * ticksNeed
+int   oldest = math.max(0, bar_index - lookback)
 
 overlapBar(float lb, float ub) =>
     float lo = math.min(lb, ub)
@@ -220,8 +212,7 @@ if sz > 0
 //==============================
 // FVG detection (with minGap + session)
 //==============================
-atrGapNow = ta.atr(dojiATRlen)
-minGap  = math.max(syminfo.mintick * minFvgTicks, atrGapNow * minFvgATR)
+minGap  = syminfo.mintick * minFvgTicks
 gapBull = low - high[2]
 gapBear = low[2] - high
 bull_fvg = gapBull >= minGap
@@ -286,16 +277,13 @@ if array.size(fvgBox) > 0
                     int d = array.get(fvgDir, i)
                     box.set_border_color(bb, d == 1 ? color.new(color.teal, borderAlpha) : color.new(color.red, borderAlpha))
 
-var int reactionCount_bar = 0
-var int reactionDir_bar   = 0
-reactionCount_bar := pendingBull + pendingBear
-reactionDir_bar   := pendingBull > 0 ? 1 : pendingBear > 0 ? -1 : 0
+int reactionCount_bar = pendingBull + pendingBear
+int reactionDir_bar   = pendingBull > 0 and pendingBear > 0 ? 0 : pendingBull > 0 ? 1 : pendingBear > 0 ? -1 : 0
 
 //==============================
 // DOJI / helpers
 //==============================
-atrNow = ta.atr(dojiATRlen)
-isDoji() => math.abs(close - open) <= atrNow * (dojiPct / 100.0)
+isDoji() => math.abs(close - open) <= (high - low) * (dojiPct / 100.0)
 
 sigToText(s) => s == 1 ? "Bull / Break High" : s == -1 ? "Bear / Break Low" : "Neutral"
 sigToColor(s) => s == 1 ? bullColor : s == -1 ? bearColor : neutralColor
@@ -324,16 +312,16 @@ m1_signal_strict() =>
             bool insideBar   = (high < prevH) and (low > prevL)
             (sweepHigh or sweepLow or insideBar) ? (dir_up() ? 1 : -1) : 0
 
-dojiNow = isDoji()
 m1_now  = m1_signal_strict()
 
+// Only the FVG(s) that actually triggered on the PREVIOUS bar can invalidate M2
 prevTrigInvalid() =>
     bool bad = false
     int N = array.size(fvgBox)
     if N > 0
         for i = 0 to N - 1
             int trigBar = array.get(fvgTrigBar, i)
-            if not na(trigBar) and (bar_index - trigBar) <= invalBars
+            if not na(trigBar) and trigBar == bar_index - 1
                 float lb = array.get(fvgBot, i), ub = array.get(fvgTop, i)
                 int d = array.get(fvgDir, i)
                 bool breach = d == 1 ? (wickInvalid ? (low < lb) : (close < lb)) : (wickInvalid ? (high > ub) : (close > ub))
@@ -344,7 +332,7 @@ prevTrigInvalid() =>
 
 int m2_now = 0
 if nz(reactionCount_bar[1], 0) == 1 and not prevTrigInvalid()
-    m2_now := dojiNow ? 0 : m1_now
+    m2_now := m1_now
 
 int m3_now = 0
 if nz(reactionCount_bar[1], 0) == 1
@@ -366,19 +354,20 @@ if drawTrigLabel and nz(reactionCount_bar[1], 0) == 1 and m3_now != 0
 //==============================
 // CONSENSUS + plots
 //==============================
-sig1 = useM1 ? m1_now : 0
-sig2 = useM2 ? m2_now : 0
-sig3 = useM3 ? m3_now : 0
+// Session filter now gates the signals themselves (not just FVG creation)
+sig1 = useM1 and inSess ? m1_now : 0
+sig2 = useM2 and inSess ? m2_now : 0
+sig3 = useM3 and inSess ? m3_now : 0
 votes   = (sig1 != 0 ? 1 : 0) + (sig2 != 0 ? 1 : 0) + (sig3 != 0 ? 1 : 0)
 sumSig    = sig1 + sig2 + sig3
 consensus = votes >= minVotes ? (sumSig > 0 ? 1 : sumSig < 0 ? -1 : 0) : 0
-filteredConsensus = consensus
 
-bool barAllowed  = updateOnClose ? barstate.isconfirmed : true
-bool showThisBar = showHistory ? ((not useDateRange or inDateWindow(time)) and barAllowed) : barstate.islastconfirmedhistory
+bool barAllowed   = updateOnClose ? barstate.isconfirmed : true
+bool inHistWindow = bar_index > last_bar_index - histBars
+bool showThisBar  = showHistory ? ((not useDateRange or inDateWindow(time)) and barAllowed and inHistWindow) : barstate.islastconfirmedhistory
 
-plotshape(barAllowed and showThisBar and filteredConsensus ==  1, title="Buy", style=shape.triangleup,   size=size.tiny, color=color.new(color.lime, 0), location=location.belowbar)
-plotshape(barAllowed and showThisBar and filteredConsensus == -1, title="Sell", style=shape.triangledown, size=size.tiny, color=color.new(color.red,  0), location=location.abovebar)
+plotshape(barAllowed and showThisBar and consensus ==  1, title="Buy", style=shape.triangleup,   size=size.tiny, color=color.new(color.lime, 0), location=location.belowbar)
+plotshape(barAllowed and showThisBar and consensus == -1, title="Sell", style=shape.triangledown, size=size.tiny, color=color.new(color.red,  0), location=location.abovebar)
 
 //==============================
 // WINRATES (rolling)
@@ -391,9 +380,9 @@ m1_tot_cum = ta.cum(m1_tot_inc), m1_tot_roll = m1_tot_cum - nz(m1_tot_cum[lookba
 m2_tot_cum = ta.cum(m2_tot_inc), m2_tot_roll = m2_tot_cum - nz(m2_tot_cum[lookback])
 m3_tot_cum = ta.cum(m3_tot_inc), m3_tot_roll = m3_tot_cum - nz(m3_tot_cum[lookback])
 
-int m1_win_dir_inc = (useM1 and inDatePrev() and (math.abs(close - open) > ta.atr(dojiATRlen) * bodyPct) and ((nz(sig1[1]) == 1 and close > open) or (nz(sig1[1]) == -1 and close < open)) ? 1 : 0)
-int m2_win_dir_inc = (useM2 and inDatePrev() and (math.abs(close - open) > ta.atr(dojiATRlen) * bodyPct) and ((nz(sig2[1]) == 1 and close > open) or (nz(sig2[1]) == -1 and close < open)) ? 1 : 0)
-int m3_win_dir_inc = (useM3 and inDatePrev() and (math.abs(close - open) > ta.atr(dojiATRlen) * bodyPct) and ((nz(sig3[1]) == 1 and close > open) or (nz(sig3[1]) == -1 and close < open)) ? 1 : 0)
+int m1_win_dir_inc = (useM1 and inDatePrev() and ((nz(sig1[1]) == 1 and close > open) or (nz(sig1[1]) == -1 and close < open)) ? 1 : 0)
+int m2_win_dir_inc = (useM2 and inDatePrev() and ((nz(sig2[1]) == 1 and close > open) or (nz(sig2[1]) == -1 and close < open)) ? 1 : 0)
+int m3_win_dir_inc = (useM3 and inDatePrev() and ((nz(sig3[1]) == 1 and close > open) or (nz(sig3[1]) == -1 and close < open)) ? 1 : 0)
 m1_win_dir_cum = ta.cum(m1_win_dir_inc), m1_win_dir_roll = m1_win_dir_cum - nz(m1_win_dir_cum[lookback])
 m2_win_dir_cum = ta.cum(m2_win_dir_inc), m2_win_dir_roll = m2_win_dir_cum - nz(m2_win_dir_cum[lookback])
 m3_win_dir_cum = ta.cum(m3_win_dir_inc), m3_win_dir_roll = m3_win_dir_cum - nz(m3_win_dir_cum[lookback])
@@ -410,31 +399,20 @@ wrM1 = showDir ? wrPick(m1_win_dir_roll, m1_tot_roll) : wrPick(m1_win_ext_roll, 
 wrM2 = showDir ? wrPick(m2_win_dir_roll, m2_tot_roll) : wrPick(m2_win_ext_roll, m2_tot_roll)
 wrM3 = showDir ? wrPick(m3_win_dir_roll, m3_tot_roll) : wrPick(m3_win_ext_roll, m3_tot_roll)
 
-showOther = showBothWR
 wrM1o = showDir ? wrPick(m1_win_ext_roll, m1_tot_roll) : wrPick(m1_win_dir_roll, m1_tot_roll)
 wrM2o = showDir ? wrPick(m2_win_ext_roll, m2_tot_roll) : wrPick(m2_win_dir_roll, m2_tot_roll)
 wrM3o = showDir ? wrPick(m3_win_ext_roll, m3_tot_roll) : wrPick(m3_win_dir_roll, m3_tot_roll)
 
 //==============================
-// MTF LOCK helper
+// MTF helper (non-repainting: last CLOSED bar of the higher TF)
 //==============================
-get_locked_sig(tf) =>
-    int s  = request.security(syminfo.tickerid, tf, m1_signal_strict(), barmerge.gaps_off, barmerge.lookahead_off)
-    int tc = request.security(syminfo.tickerid, tf, time_close,         barmerge.gaps_off, barmerge.lookahead_off)
-    var int lastTc = na
-    var int lock   = 0
-    if barstate.isfirst
-        lock   := s
-        lastTc := tc
-    else if not na(tc) and tc != lastTc
-        lock   := s
-        lastTc := tc
-    lock == 0 ? s : lock
+get_htf_sig(tf) =>
+    request.security(syminfo.tickerid, tf, m1_signal_strict()[1], barmerge.gaps_off, barmerge.lookahead_on)
 
-var int lockD = 0
-var int lockH4 = 0
-var int lockH1 = 0
-var int lockM15 = 0
+int htfD   = get_htf_sig("D")
+int htfH4  = get_htf_sig("240")
+int htfH1  = get_htf_sig("60")
+int htfM15 = get_htf_sig("15")
 
 //==============================
 // TABLE
@@ -456,17 +434,11 @@ setCell(row, col, txt, bg, fg) =>
 
 bool doTableUpdate = updateOnClose ? barstate.isconfirmed : barstate.islast
 
-if doTableUpdate and mtfAllowed
-    lockD   := get_locked_sig("D")
-    lockH4  := get_locked_sig("240")
-    lockH1  := get_locked_sig("60")
-    lockM15 := get_locked_sig("15")
-
 if doTableUpdate
     int r = 0
     if showRowNext
         setCell(r, 0, "Next Candle",                   rowBgColor,                    textColor)
-        setCell(r, 1, sigToText(filteredConsensus),    sigToColor(filteredConsensus), signalTextColor)
+        setCell(r, 1, sigToText(consensus),            sigToColor(consensus),         signalTextColor)
         r += 1
     if showRowVotes
         setCell(r, 0, "Votes / Min", rowBgColor, textColor)
@@ -515,14 +487,14 @@ if doTableUpdate
         setCell(r, 1, "", color.new(color.black,100), textColor)
         r += 1
         setCell(r, 0, "MTF D",  rowBgColor, textColor)
-        setCell(r, 1, sigToText(lockD),  sigToColor(lockD),  signalTextColor)
+        setCell(r, 1, sigToText(htfD),   sigToColor(htfD),   signalTextColor)
         r += 1
         setCell(r, 0, "MTF 240",rowBgColor, textColor)
-        setCell(r, 1, sigToText(lockH4), sigToColor(lockH4), signalTextColor)
+        setCell(r, 1, sigToText(htfH4),  sigToColor(htfH4),  signalTextColor)
         r += 1
         setCell(r, 0, "MTF 60", rowBgColor, textColor)
-        setCell(r, 1, sigToText(lockH1), sigToColor(lockH1), signalTextColor)
+        setCell(r, 1, sigToText(htfH1),  sigToColor(htfH1),  signalTextColor)
         r += 1
         setCell(r, 0, "MTF 15", rowBgColor, textColor)
-        setCell(r, 1, sigToText(lockM15),sigToColor(lockM15),signalTextColor)
+        setCell(r, 1, sigToText(htfM15), sigToColor(htfM15), signalTextColor)
         r += 1
