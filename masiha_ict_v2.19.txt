@@ -1,5 +1,5 @@
 //@version=5
-indicator("Masiha ICT (v2.18)", "Masiha ICT v2.18", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+indicator("Masiha ICT (v2.19)", "Masiha ICT v2.19", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 //==============================
 // VIEW / DATE
@@ -104,13 +104,6 @@ trigLabelTxtColor = input.color(color.new(color.black, 0), "Label text color", g
 
 getLblSize() =>
     trigLabelSizeOpt == "Small" ? size.small : trigLabelSizeOpt == "Normal" ? size.normal : size.tiny
-
-//==============================
-// MTF PANEL (<=15m) — M1 only, from last CLOSED bar of each TF (non-repainting)
-//==============================
-group_mtf  = "MTF Panel (<=15m)"
-enableMTF  = input.bool(true, "Enable MTF panel when chart TF <= 15m", group=group_mtf)
-bool mtfAllowed = timeframe.in_seconds() <= timeframe.in_seconds("15") and enableMTF
 
 //==============================
 // COLORS / UTILS (existing helpers)
@@ -410,17 +403,6 @@ wrM3o = showDir ? wrPick(m3_win_ext_roll, m3_tot_roll) : wrPick(m3_win_dir_roll,
 wrCno = showDir ? wrPick(cn_win_ext_roll, cn_tot_roll) : wrPick(cn_win_dir_roll, cn_tot_roll)
 
 //==============================
-// MTF helper (non-repainting: last CLOSED bar of the higher TF)
-//==============================
-get_htf_sig(tf) =>
-    request.security(syminfo.tickerid, tf, m1_signal_strict()[1], barmerge.gaps_off, barmerge.lookahead_on)
-
-int htfD   = get_htf_sig("D")
-int htfH4  = get_htf_sig("240")
-int htfH1  = get_htf_sig("60")
-int htfM15 = get_htf_sig("15")
-
-//==============================
 // TABLE
 //==============================
 posFromString(p) =>
@@ -429,7 +411,7 @@ posFromString(p) =>
      p == "bottom_left" ? position.bottom_left : position.bottom_right
 
 var string lastPos = ""
-int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)+(mtfAllowed?5:0)
+int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)
 var table  dash    = na
 if barstate.isfirst or na(dash) or dashPos != lastPos
     dash := table.new(posFromString(dashPos), 2, num_rows, border_width=1)
@@ -489,20 +471,4 @@ if doTableUpdate
         r += 1
         setCell(r, 0, "Cons (" + wrModeStr2 + ")", rowBgColor, textColor)
         setCell(r, 1, na(wrCno) ? "-" : str.tostring(wrCno, "#.0") + "% (N=" + str.tostring(cn_tot_roll) + ")", wrCno >= 50 ? bullColor : bearColor, signalTextColor)
-        r += 1
-    if mtfAllowed
-        setCell(r, 0, "", color.new(color.black,100), textColor)
-        setCell(r, 1, "", color.new(color.black,100), textColor)
-        r += 1
-        setCell(r, 0, "MTF D",  rowBgColor, textColor)
-        setCell(r, 1, sigToText(htfD),   sigToColor(htfD),   signalTextColor)
-        r += 1
-        setCell(r, 0, "MTF 240",rowBgColor, textColor)
-        setCell(r, 1, sigToText(htfH4),  sigToColor(htfH4),  signalTextColor)
-        r += 1
-        setCell(r, 0, "MTF 60", rowBgColor, textColor)
-        setCell(r, 1, sigToText(htfH1),  sigToColor(htfH1),  signalTextColor)
-        r += 1
-        setCell(r, 0, "MTF 15", rowBgColor, textColor)
-        setCell(r, 1, sigToText(htfM15), sigToColor(htfM15), signalTextColor)
         r += 1
