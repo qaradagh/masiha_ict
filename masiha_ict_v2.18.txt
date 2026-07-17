@@ -1,5 +1,5 @@
 //@version=5
-indicator("Masiha ICT (v2.17)", "Masiha ICT v2.17", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+indicator("Masiha ICT (v2.18)", "Masiha ICT v2.18", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 //==============================
 // VIEW / DATE
@@ -10,27 +10,13 @@ histBars       = input.int(500,  "History depth (last N candles)", minval=1, max
 updateOnClose  = input.bool(true,  "Update dashboard/arrows only on bar close",   group=group_view)
 
 group_date     = "Date Filter"
-useDateRange   = input.bool(false, "Enable date range filter (affects FVG + WinRate)", group=group_date)
-// Timezone selection for the date filter (CONST options only)
-tzPick         = input.string("America/New_York", "Timezone", options=["Symbol/Exchange","America/New_York","UTC","Europe/London","Europe/Stockholm","Asia/Tehran"], group=group_date)
+useDateRange   = input.bool(false, "Filter to recent days only (affects FVG + WinRate)", group=group_date)
+lastNdays      = input.int(30, "Last N days", minval=1, maxval=3650, group=group_date)
 
-yF = input.int(2025, "From Year",   minval=1970, maxval=2100, group=group_date)
-mF = input.int(7,    "From Month",  minval=1,    maxval=12,   group=group_date)
-dF = input.int(1,    "From Day",    minval=1,    maxval=31,   group=group_date)
-hF = input.int(0,    "From Hour",   minval=0,    maxval=23,   group=group_date)
-nF = input.int(0,    "From Minute", minval=0,    maxval=59,   group=group_date)
-yT = input.int(2025, "To Year",     minval=1970, maxval=2100, group=group_date)
-mT = input.int(12,   "To Month",    minval=1,    maxval=12,   group=group_date)
-dT = input.int(31,   "To Day",      minval=1,    maxval=31,   group=group_date)
-hT = input.int(23,   "To Hour",     minval=0,    maxval=23,   group=group_date)
-nT = input.int(59,   "To Minute",   minval=0,    maxval=59,   group=group_date)
+int dateFromTS = timenow - lastNdays * 86400000
 
-// Build timestamps without passing non-const strings into timestamp()
-dateFromTS = tzPick == "Symbol/Exchange" ? timestamp(yF, mF, dF, hF, nF) : timestamp(tzPick, yF, mF, dF, hF, nF)
-dateToTS   = tzPick == "Symbol/Exchange" ? timestamp(yT, mT, dT, hT, nT) : timestamp(tzPick, yT, mT, dT, hT, nT)
-
-inDateWindow(t) => not useDateRange or (t >= dateFromTS and t <= dateToTS)
-inDatePrev()    => not useDateRange or (time[1] >= dateFromTS and time[1] <= dateToTS)
+inDateWindow(t) => not useDateRange or t >= dateFromTS
+inDatePrev()    => not useDateRange or time[1] >= dateFromTS
 
 //==============================
 // SESSION FILTER (new)  -- avoid non-const default in input.string
@@ -58,7 +44,6 @@ showRowVotes   = input.bool(true,  "Show Votes row",       group=group_rows)
 showRowM1      = input.bool(true,  "Show M1 row",          group=group_rows)
 showRowM2      = input.bool(true,  "Show M2 row",          group=group_rows)
 showRowM3      = input.bool(true,  "Show M3 row",          group=group_rows)
-showRowCons    = input.bool(true,  "Show Consensus row",   group=group_rows)
 showRowWR      = input.bool(true,  "Show WinRate (primary)", group=group_rows)
 showRowWROther = input.bool(false, "Show WinRate (other)",   group=group_rows)
 
@@ -73,7 +58,6 @@ minVotes       = input.int(1, "Min votes for consensus", minval=1, maxval=3, gro
 
 group_wr       = "WinRate"
 wrMode         = input.string("Direction (Close)", "WinRate mode", options=["Direction (Close)","Extreme (Break HL)"], group=group_wr)
-showBothWR     = input.bool(false, "Also compute the other mode", group=group_wr)
 wickInvalid    = input.bool(false, "Invalidate M2 on wick (else close)",   group=group_wr)
 
 //==============================
@@ -146,7 +130,6 @@ var array<int>   fvgT1    = array.new_int()
 var array<bool>  fvgUsed  = array.new_bool()
 var array<box>   fvgBox   = array.new_box()
 var array<int>   fvgUsedBar      = array.new_int()
-var array<bool>  fvgDisrespect   = array.new_bool()
 var array<int>   fvgTrigBar      = array.new_int()
 var array<label> fvgTrigLabel    = array.new_label()
 
@@ -177,16 +160,19 @@ addFVG(int _dir, float _lb, float _ub, int _x1, int _t1) =>
         b := box.new(_x1, hi, bar_index, lo, xloc=xloc.bar_index, border_color=brd, bgcolor=fil, border_width=1)
     array.push(fvgTop, hi), array.push(fvgBot, lo), array.push(fvgDir, _dir)
     array.push(fvgX1,_x1), array.push(fvgT1,_t1), array.push(fvgUsed,false)
-    array.push(fvgBox,b), array.push(fvgUsedBar,na), array.push(fvgDisrespect,false)
+    array.push(fvgBox,b), array.push(fvgUsedBar,na)
     array.push(fvgTrigBar,na), array.push(fvgTrigLabel,na)
 
 deleteFVG(i) =>
     box b = array.get(fvgBox, i)
     if not na(b)
         box.delete(b)
+    label l = array.get(fvgTrigLabel, i)
+    if not na(l)
+        label.delete(l)
     array.remove(fvgTop, i), array.remove(fvgBot, i), array.remove(fvgDir, i)
     array.remove(fvgX1, i), array.remove(fvgT1, i), array.remove(fvgUsed, i)
-    array.remove(fvgBox, i), array.remove(fvgUsedBar, i), array.remove(fvgDisrespect, i)
+    array.remove(fvgBox, i), array.remove(fvgUsedBar, i)
     array.remove(fvgTrigBar, i), array.remove(fvgTrigLabel, i)
 
 //==============================
@@ -208,6 +194,15 @@ if sz > 0
             int usedBar_ = array.get(fvgUsedBar, k)
             if not na(usedBar_) and bar_index - usedBar_ > usedTTL
                 deleteFVG(k)
+
+// Trigger-label history: keep M2/M3 labels only for the last histBars candles
+if array.size(fvgTrigLabel) > 0
+    for k = 0 to array.size(fvgTrigLabel) - 1
+        label tl = array.get(fvgTrigLabel, k)
+        int   tb = array.get(fvgTrigBar, k)
+        if not na(tl) and not na(tb) and bar_index - tb > histBars
+            label.delete(tl)
+            array.set(fvgTrigLabel, k, na)
 
 //==============================
 // FVG detection (with minGap + session)
@@ -245,7 +240,7 @@ if array.size(fvgBox) > 0
                 int d = array.get(fvgDir, i)
                 bool disrespect = (d == 1 and close < lb) or (d == -1 and close > ub)
                 bool respected  = not disrespect
-                array.set(fvgUsed, i, true), array.set(fvgUsedBar, i, bar_index), array.set(fvgDisrespect, i, disrespect)
+                array.set(fvgUsed, i, true), array.set(fvgUsedBar, i, bar_index)
                 box bb = array.get(fvgBox, i)
                 if onlyUnused
                     if not na(bb)
@@ -285,10 +280,9 @@ int reactionDir_bar   = pendingBull > 0 and pendingBear > 0 ? 0 : pendingBull > 
 //==============================
 isDoji() => math.abs(close - open) <= (high - low) * (dojiPct / 100.0)
 
-sigToText(s) => s == 1 ? "Bull / Break High" : s == -1 ? "Bear / Break Low" : "Neutral"
+sigToText(s) => s == 1 ? "Bull" : s == -1 ? "Bear" : "Neutral"
 sigToColor(s) => s == 1 ? bullColor : s == -1 ? bearColor : neutralColor
 dir_up()   => close > open
-dir_down() => close < open
 
 //==============================
 // M1 / M2 / M3 signals
@@ -369,6 +363,10 @@ bool showThisBar  = showHistory ? ((not useDateRange or inDateWindow(time)) and 
 plotshape(barAllowed and showThisBar and consensus ==  1, title="Buy", style=shape.triangleup,   size=size.tiny, color=color.new(color.lime, 0), location=location.belowbar)
 plotshape(barAllowed and showThisBar and consensus == -1, title="Sell", style=shape.triangledown, size=size.tiny, color=color.new(color.red,  0), location=location.abovebar)
 
+// Alerts (use "Once Per Bar Close" when creating the alert in TradingView)
+alertcondition(consensus ==  1, "Consensus Bull", "Masiha ICT: next candle predicted BULLISH")
+alertcondition(consensus == -1, "Consensus Bear", "Masiha ICT: next candle predicted BEARISH")
+
 //==============================
 // WINRATES (rolling)
 //==============================
@@ -376,32 +374,40 @@ wrPick(mWinRoll, mTotRoll) => mTotRoll > 0 ? float(mWinRoll) / mTotRoll * 100.0 
 int m1_tot_inc = (useM1 and nz(sig1[1]) != 0 and inDatePrev() ? 1 : 0)
 int m2_tot_inc = (useM2 and nz(sig2[1]) != 0 and inDatePrev() ? 1 : 0)
 int m3_tot_inc = (useM3 and nz(sig3[1]) != 0 and inDatePrev() ? 1 : 0)
+int cn_tot_inc = (nz(consensus[1]) != 0 and inDatePrev() ? 1 : 0)
 m1_tot_cum = ta.cum(m1_tot_inc), m1_tot_roll = m1_tot_cum - nz(m1_tot_cum[lookback])
 m2_tot_cum = ta.cum(m2_tot_inc), m2_tot_roll = m2_tot_cum - nz(m2_tot_cum[lookback])
 m3_tot_cum = ta.cum(m3_tot_inc), m3_tot_roll = m3_tot_cum - nz(m3_tot_cum[lookback])
+cn_tot_cum = ta.cum(cn_tot_inc), cn_tot_roll = cn_tot_cum - nz(cn_tot_cum[lookback])
 
 int m1_win_dir_inc = (useM1 and inDatePrev() and ((nz(sig1[1]) == 1 and close > open) or (nz(sig1[1]) == -1 and close < open)) ? 1 : 0)
 int m2_win_dir_inc = (useM2 and inDatePrev() and ((nz(sig2[1]) == 1 and close > open) or (nz(sig2[1]) == -1 and close < open)) ? 1 : 0)
 int m3_win_dir_inc = (useM3 and inDatePrev() and ((nz(sig3[1]) == 1 and close > open) or (nz(sig3[1]) == -1 and close < open)) ? 1 : 0)
+int cn_win_dir_inc = (inDatePrev() and ((nz(consensus[1]) == 1 and close > open) or (nz(consensus[1]) == -1 and close < open)) ? 1 : 0)
 m1_win_dir_cum = ta.cum(m1_win_dir_inc), m1_win_dir_roll = m1_win_dir_cum - nz(m1_win_dir_cum[lookback])
 m2_win_dir_cum = ta.cum(m2_win_dir_inc), m2_win_dir_roll = m2_win_dir_cum - nz(m2_win_dir_cum[lookback])
 m3_win_dir_cum = ta.cum(m3_win_dir_inc), m3_win_dir_roll = m3_win_dir_cum - nz(m3_win_dir_cum[lookback])
+cn_win_dir_cum = ta.cum(cn_win_dir_inc), cn_win_dir_roll = cn_win_dir_cum - nz(cn_win_dir_cum[lookback])
 
 int m1_win_ext_inc = (useM1 and inDatePrev() and ((nz(sig1[1]) == 1 and high > high[1]) or (nz(sig1[1]) == -1 and low < low[1])) ? 1 : 0)
 int m2_win_ext_inc = (useM2 and inDatePrev() and ((nz(sig2[1]) == 1 and high > high[1]) or (nz(sig2[1]) == -1 and low < low[1])) ? 1 : 0)
 int m3_win_ext_inc = (useM3 and inDatePrev() and ((nz(sig3[1]) == 1 and high > high[1]) or (nz(sig3[1]) == -1 and low  < low[1])) ? 1 : 0)
+int cn_win_ext_inc = (inDatePrev() and ((nz(consensus[1]) == 1 and high > high[1]) or (nz(consensus[1]) == -1 and low < low[1])) ? 1 : 0)
 m1_win_ext_cum = ta.cum(m1_win_ext_inc), m1_win_ext_roll = m1_win_ext_cum - nz(m1_win_ext_cum[lookback])
 m2_win_ext_cum = ta.cum(m2_win_ext_inc), m2_win_ext_roll = m2_win_ext_cum - nz(m2_win_ext_cum[lookback])
 m3_win_ext_cum = ta.cum(m3_win_ext_inc), m3_win_ext_roll = m3_win_ext_cum - nz(m3_win_ext_cum[lookback])
+cn_win_ext_cum = ta.cum(cn_win_ext_inc), cn_win_ext_roll = cn_win_ext_cum - nz(cn_win_ext_cum[lookback])
 
 bool showDir = wrMode == "Direction (Close)"
 wrM1 = showDir ? wrPick(m1_win_dir_roll, m1_tot_roll) : wrPick(m1_win_ext_roll, m1_tot_roll)
 wrM2 = showDir ? wrPick(m2_win_dir_roll, m2_tot_roll) : wrPick(m2_win_ext_roll, m2_tot_roll)
 wrM3 = showDir ? wrPick(m3_win_dir_roll, m3_tot_roll) : wrPick(m3_win_ext_roll, m3_tot_roll)
+wrCn = showDir ? wrPick(cn_win_dir_roll, cn_tot_roll) : wrPick(cn_win_ext_roll, cn_tot_roll)
 
 wrM1o = showDir ? wrPick(m1_win_ext_roll, m1_tot_roll) : wrPick(m1_win_dir_roll, m1_tot_roll)
 wrM2o = showDir ? wrPick(m2_win_ext_roll, m2_tot_roll) : wrPick(m2_win_dir_roll, m2_tot_roll)
 wrM3o = showDir ? wrPick(m3_win_ext_roll, m3_tot_roll) : wrPick(m3_win_dir_roll, m3_tot_roll)
+wrCno = showDir ? wrPick(cn_win_ext_roll, cn_tot_roll) : wrPick(cn_win_dir_roll, cn_tot_roll)
 
 //==============================
 // MTF helper (non-repainting: last CLOSED bar of the higher TF)
@@ -423,7 +429,7 @@ posFromString(p) =>
      p == "bottom_left" ? position.bottom_left : position.bottom_right
 
 var string lastPos = ""
-int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowCons?1:0)+(showRowWR?3:0)+(showRowWROther?3:0)+(mtfAllowed?5:0)
+int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)+(mtfAllowed?5:0)
 var table  dash    = na
 if barstate.isfirst or na(dash) or dashPos != lastPos
     dash := table.new(posFromString(dashPos), 2, num_rows, border_width=1)
@@ -456,10 +462,6 @@ if doTableUpdate
         setCell(r, 0, "M3", rowBgColor, textColor)
         setCell(r, 1, sigToText(useM3 ? sig3 : 0), sigToColor(useM3 ? sig3 : 0), signalTextColor)
         r += 1
-    if showRowCons
-        setCell(r, 0, "Consensus", rowBgColor, textColor)
-        setCell(r, 1, sigToText(consensus), sigToColor(consensus), signalTextColor)
-        r += 1
     if showRowWR
         string wrModeStr = wrMode == "Direction (Close)" ? "Dir" : "BreakHL"
         setCell(r, 0, "M1 (" + wrModeStr + ")", rowBgColor, textColor)
@@ -471,6 +473,9 @@ if doTableUpdate
         setCell(r, 0, "M3 (" + wrModeStr + ")", rowBgColor, textColor)
         setCell(r, 1, na(wrM3) ? "-" : str.tostring(wrM3, "#.0") + "% (N=" + str.tostring(m3_tot_roll) + ")", wrM3 >= 50 ? bullColor : bearColor, signalTextColor)
         r += 1
+        setCell(r, 0, "Cons (" + wrModeStr + ")", rowBgColor, textColor)
+        setCell(r, 1, na(wrCn) ? "-" : str.tostring(wrCn, "#.0") + "% (N=" + str.tostring(cn_tot_roll) + ")", wrCn >= 50 ? bullColor : bearColor, signalTextColor)
+        r += 1
     if showRowWROther
         string wrModeStr2 = wrMode != "Direction (Close)" ? "Dir" : "BreakHL"
         setCell(r, 0, "M1 (" + wrModeStr2 + ")", rowBgColor, textColor)
@@ -481,6 +486,9 @@ if doTableUpdate
         r += 1
         setCell(r, 0, "M3 (" + wrModeStr2 + ")", rowBgColor, textColor)
         setCell(r, 1, na(wrM3o) ? "-" : str.tostring(wrM3o, "#.0") + "% (N=" + str.tostring(m3_tot_roll) + ")", wrM3o >= 50 ? bullColor : bearColor, signalTextColor)
+        r += 1
+        setCell(r, 0, "Cons (" + wrModeStr2 + ")", rowBgColor, textColor)
+        setCell(r, 1, na(wrCno) ? "-" : str.tostring(wrCno, "#.0") + "% (N=" + str.tostring(cn_tot_roll) + ")", wrCno >= 50 ? bullColor : bearColor, signalTextColor)
         r += 1
     if mtfAllowed
         setCell(r, 0, "", color.new(color.black,100), textColor)
