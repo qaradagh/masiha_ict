@@ -1,5 +1,5 @@
 //@version=5
-indicator("Masiha ICT (v2.21)", "Masiha ICT v2.21", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+indicator("Masiha ICT (v2.22)", "Masiha ICT v2.22", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 //==============================
 // VIEW / DATE
@@ -122,6 +122,12 @@ trigLabelTxtColor = input.color(color.new(color.black, 0), "Label text color", g
 
 getLblSize() =>
     trigLabelSizeOpt == "Small" ? size.small : trigLabelSizeOpt == "Normal" ? size.normal : size.tiny
+
+//==============================
+// MTF PANEL — locked CONSENSUS of the last CLOSED bar of each higher TF
+//==============================
+group_mtf  = "MTF Panel"
+enableMTF  = input.bool(true, "Enable MTF consensus panel", group=group_mtf, tooltip="Each row shows the consensus (same as the chart arrows) of the LAST CLOSED candle of that timeframe, locked until its next candle closes. Session filter and adaptive gating are not applied to MTF values.")
 
 //==============================
 // COLORS / UTILS (existing helpers)
@@ -334,9 +340,11 @@ m1_signal_case() =>
             cs  := 4
     [sig, cs]
 
+caseEnabled(c) => c == 1 ? useCaseEngulf : c == 2 ? useCaseBreak : c == 3 ? useCaseSweep : c == 4 ? useCaseInside : false
+
 [m1_raw, m1_case] = m1_signal_case()
 // Per-case toggles: WinRates are measured on the RAW signal, so a disabled case still shows its stats
-bool m1_case_on = m1_case == 1 ? useCaseEngulf : m1_case == 2 ? useCaseBreak : m1_case == 3 ? useCaseSweep : m1_case == 4 ? useCaseInside : false
+bool m1_case_on = caseEnabled(m1_case)
 m1_now  = m1_case_on ? m1_raw : 0
 
 // Only the FVG(s) that actually triggered on the PREVIOUS bar can invalidate M2
@@ -479,6 +487,116 @@ alertcondition(consensus ==  1, "Consensus Bull", "Masiha ICT: next candle predi
 alertcondition(consensus == -1, "Consensus Bear", "Masiha ICT: next candle predicted BEARISH")
 
 //==============================
+// MTF CONSENSUS ENGINE
+// Pure (drawing-free) re-implementation of the full signal pipeline
+// (FVG detect -> reaction -> M1/M2/M3 -> votes), safe to run inside
+// request.security. State lives in function-local arrays, one instance
+// per requested timeframe. Session filter and adaptive gating are NOT
+// applied here (raw consensus).
+//==============================
+htf_consensus() =>
+    var array<float> fTop  = array.new_float()
+    var array<float> fBot  = array.new_float()
+    var array<int>   fDir  = array.new_int()
+    var array<int>   fX1   = array.new_int()
+    var array<bool>  fUsed = array.new_bool()
+    var array<int>   fTrig = array.new_int()
+    var int prevCount = 0
+    var int prevDir   = 0
+
+    // cleanup: outside lookback, or consumed zones no longer needed for M2 invalidation
+    if array.size(fTop) > 0
+        int oldestL = math.max(0, bar_index - lookback)
+        for k = array.size(fTop) - 1 to 0
+            int tg = array.get(fTrig, k)
+            bool stale   = array.get(fX1, k) < oldestL
+            bool usedOld = array.get(fUsed, k) and (na(tg) or tg < bar_index - 1)
+            if stale or usedOld
+                array.remove(fTop,k), array.remove(fBot,k), array.remove(fDir,k)
+                array.remove(fX1,k), array.remove(fUsed,k), array.remove(fTrig,k)
+
+    // FVG detection (same rules as the chart: min size + displacement)
+    float midR = high[1] - low[1]
+    bool dOK   = not useDispFilter or (midR > 0 and math.abs(close[1] - open[1]) >= midR * dispMinBody / 100.0)
+    float mGap = syminfo.mintick * minFvgTicks
+    if showBull and dOK and (low - high[2]) >= mGap
+        array.push(fTop, low), array.push(fBot, high[2]), array.push(fDir, 1)
+        array.push(fX1, bar_index - 2), array.push(fUsed, false), array.push(fTrig, na)
+    if showBear and dOK and (low[2] - high) >= mGap
+        array.push(fTop, low[2]), array.push(fBot, high), array.push(fDir, -1)
+        array.push(fX1, bar_index - 2), array.push(fUsed, false), array.push(fTrig, na)
+
+    // M2 invalidation: zone triggered on the PREVIOUS bar breached now?
+    bool inval = false
+    if array.size(fTrig) > 0
+        for i = 0 to array.size(fTrig) - 1
+            int tb = array.get(fTrig, i)
+            if not na(tb) and tb == bar_index - 1
+                float lb2 = array.get(fBot, i), ub2 = array.get(fTop, i)
+                int d2 = array.get(fDir, i)
+                bool breach = d2 == 1 ? (wickInvalid ? low < lb2 : close < lb2) : (wickInvalid ? high > ub2 : close > ub2)
+                if breach
+                    inval := true
+                    break
+
+    // consume zones / count valid reactions on this bar
+    int pBull = 0
+    int pBear = 0
+    float penPx = syminfo.mintick * ticksNeed
+    if array.size(fTop) > 0
+        for i = 0 to array.size(fTop) - 1
+            if not array.get(fUsed, i)
+                float ub = array.get(fTop, i), lb = array.get(fBot, i)
+                float ov = math.max(0.0, math.min(ub, high) - math.max(lb, low))
+                bool fullFill = (ov + syminfo.mintick * fullFillTolTicks) >= (ub - lb)
+                if ov >= penPx or (fullFillOverride and fullFill)
+                    int d = array.get(fDir, i)
+                    bool disr  = (d == 1 and close < lb) or (d == -1 and close > ub)
+                    bool fresh = not useFreshFilter or (bar_index - (array.get(fX1, i) + 2)) <= fvgMaxAge
+                    array.set(fUsed, i, true)
+                    if not disr and fresh
+                        array.set(fTrig, i, bar_index)
+                        if d == 1
+                            pBull += 1
+                        else
+                            pBear += 1
+
+    // M1 / M2 / M3 on this TF's candles
+    [m1r, m1c] = m1_signal_case()
+    int m1v = caseEnabled(m1c) ? m1r : 0
+    int m2v = prevCount == 1 and not inval ? m1v : 0
+    int m3v = 0
+    if prevCount == 1
+        bool swL = low[1]  < low[2]  and low[1]  < low
+        bool swH = high[1] > high[2] and high[1] > high
+        m3v := prevDir == 1 and swL ? 1 : prevDir == -1 and swH ? -1 : 0
+    prevCount := pBull + pBear
+    prevDir   := pBull > 0 and pBear > 0 ? 0 : pBull > 0 ? 1 : pBear > 0 ? -1 : 0
+
+    int s1 = useM1 ? m1v : 0
+    int s2 = useM2 ? m2v : 0
+    int s3 = useM3 ? m3v : 0
+    int vts  = (s1 != 0 ? 1 : 0) + (s2 != 0 ? 1 : 0) + (s3 != 0 ? 1 : 0)
+    int ssum = s1 + s2 + s3
+    vts >= minVotes ? (ssum > 0 ? 1 : ssum < 0 ? -1 : 0) : 0
+
+// Last CLOSED bar of the higher TF, locked until its next close (non-repainting)
+get_htf_consensus(tf) =>
+    request.security(syminfo.tickerid, tf, htf_consensus()[1], barmerge.gaps_off, barmerge.lookahead_on)
+
+int mtfD   = get_htf_consensus("D")
+int mtfH4  = get_htf_consensus("240")
+int mtfH1  = get_htf_consensus("60")
+int mtfM15 = get_htf_consensus("15")
+
+// show a row only for TFs at or above the chart TF
+bool rowD   = enableMTF and timeframe.in_seconds() <= timeframe.in_seconds("D")
+bool rowH4  = enableMTF and timeframe.in_seconds() <= timeframe.in_seconds("240")
+bool rowH1  = enableMTF and timeframe.in_seconds() <= timeframe.in_seconds("60")
+bool rowM15 = enableMTF and timeframe.in_seconds() <= timeframe.in_seconds("15")
+bool anyMtf = rowD or rowH4 or rowH1 or rowM15
+
+//==============================
 // TABLE
 //==============================
 posFromString(p) =>
@@ -487,7 +605,7 @@ posFromString(p) =>
      p == "bottom_left" ? position.bottom_left : position.bottom_right
 
 var string lastPos = ""
-int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)+(showRowCases?4:0)
+int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)+(showRowCases?4:0)+(anyMtf?1:0)+(rowD?1:0)+(rowH4?1:0)+(rowH1?1:0)+(rowM15?1:0)
 var table  dash    = na
 if barstate.isfirst or na(dash) or dashPos != lastPos
     dash := table.new(posFromString(dashPos), 2, num_rows, border_width=1)
@@ -564,3 +682,23 @@ if doTableUpdate
         setCell(r, 0, "Inside" + (useCaseInside ? "" : " (off)"), rowBgColor, textColor)
         setCell(r, 1, na(wrIns) ? "-" : str.tostring(wrIns, "#.0") + "% (N=" + str.tostring(cInsN, "#") + ")", wrIns >= 50 ? bullColor : bearColor, signalTextColor)
         r += 1
+    if anyMtf
+        setCell(r, 0, "", color.new(color.black,100), textColor)
+        setCell(r, 1, "", color.new(color.black,100), textColor)
+        r += 1
+        if rowD
+            setCell(r, 0, "MTF D",   rowBgColor, textColor)
+            setCell(r, 1, sigToText(mtfD),   sigToColor(mtfD),   signalTextColor)
+            r += 1
+        if rowH4
+            setCell(r, 0, "MTF 240", rowBgColor, textColor)
+            setCell(r, 1, sigToText(mtfH4),  sigToColor(mtfH4),  signalTextColor)
+            r += 1
+        if rowH1
+            setCell(r, 0, "MTF 60",  rowBgColor, textColor)
+            setCell(r, 1, sigToText(mtfH1),  sigToColor(mtfH1),  signalTextColor)
+            r += 1
+        if rowM15
+            setCell(r, 0, "MTF 15",  rowBgColor, textColor)
+            setCell(r, 1, sigToText(mtfM15), sigToColor(mtfM15), signalTextColor)
+            r += 1
