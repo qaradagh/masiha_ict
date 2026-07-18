@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>راهنمای Masiha ICT v2.20</title>
+<style>
+  @font-face { font-family:'Vazirmatn'; src:url('fonts/Vazirmatn-400.ttf') format('truetype'); font-weight:400; }
+  @font-face { font-family:'Vazirmatn'; src:url('fonts/Vazirmatn-500.ttf') format('truetype'); font-weight:500; }
+  @font-face { font-family:'Vazirmatn'; src:url('fonts/Vazirmatn-700.ttf') format('truetype'); font-weight:700; }
+  @font-face { font-family:'Vazirmatn'; src:url('fonts/Vazirmatn-900.ttf') format('truetype'); font-weight:900; }
+
+  :root{
+    --navy:#0e1a2b; --navy2:#15263d; --ink:#1e293b; --muted:#64748b;
+    --teal:#0d9488; --teal-soft:#ccfbf1; --teal-ink:#0f766e;
+    --red:#dc2626;  --red-soft:#fee2e2;
+    --amber:#d97706; --amber-soft:#fef3c7;
+    --line:#e2e8f0; --bg-soft:#f8fafc;
+    --page:#ffffff; --surface:#ffffff; --head:#0e1a2b; --body2:#334155;
+    --code-bg:#eef2f7; --code-ink:#0f4c81;
+    --tip-bg:#ccfbf1; --tip-ink:#134e4a;
+    --warn-bg:#fef3c7; --warn-ink:#78350f;
+    --danger-bg:#fee2e2; --danger-ink:#7f1d1d;
+    --pill-neu-bg:#f1f5f9; --pill-neu-ink:#64748b;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  html,body{ font-family:'Vazirmatn',sans-serif; color:var(--ink); background:var(--page); font-size:10.5pt; line-height:1.95; }
+
+  @page { size:A4; margin:15mm 14mm 16mm 14mm; }
+  @page:first { margin:0; }
+  section.page{ break-before:page; }
+  section.first{ break-before:auto; }
+
+  /* ---------- COVER ---------- */
+  .cover{
+    width:210mm; height:296mm; color:#e8eef7; position:relative; overflow:hidden;
+    background:linear-gradient(160deg,#0a1420 0%, #0e1a2b 45%, #123047 100%);
+    display:flex; flex-direction:column; justify-content:space-between; padding:22mm 20mm;
+  }
+  .cover .brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:11pt; color:#7dd3c8; }
+  .cover .brand .dot{ width:10px; height:10px; border-radius:3px; background:#14b8a6; }
+  .cover .mid{ position:relative; z-index:2; }
+  .cover h1{ font-size:40pt; font-weight:900; line-height:1.3; color:#fff; }
+  .cover h2{ font-size:16pt; font-weight:500; color:#9fb3cc; margin-top:4mm; }
+  .cover .chips{ margin-top:10mm; display:flex; gap:8px; }
+  .chip{ display:inline-block; padding:4px 16px; border-radius:99px; font-size:10pt; font-weight:700; }
+  .chip.v{ background:#14b8a6; color:#032722; }
+  .chip.o{ border:1.5px solid #33506e; color:#b9c9dd; }
+  .cover .foot{ position:relative; z-index:2; display:flex; justify-content:space-between; align-items:flex-end; color:#7c92ad; font-size:9.5pt; }
+  .candles{ position:absolute; left:0; right:0; bottom:28mm; opacity:.5; z-index:1; }
+
+  /* ---------- COMMON ---------- */
+  h2.sec{ display:flex; align-items:center; gap:12px; font-size:17pt; font-weight:900; color:var(--head); margin-bottom:6mm; }
+  h2.sec .num{
+    flex:0 0 auto; width:34px; height:34px; border-radius:10px; background:var(--navy); color:#5eead4;
+    display:flex; align-items:center; justify-content:center; font-size:13pt; font-weight:900;
+  }
+  h2.sec .bar{ flex:1; height:3px; border-radius:2px; background:linear-gradient(-90deg,var(--teal),transparent); }
+  h3{ font-size:12pt; font-weight:700; color:var(--head); margin:5mm 0 2mm; }
+  p{ margin-bottom:3mm; text-align:justify; }
+  b{ font-weight:700; }
+  .lead{ color:var(--body2); font-size:11pt; }
+  code{ font-family:'Vazirmatn'; direction:ltr; unicode-bidi:embed; background:var(--code-bg); border:1px solid var(--line); border-radius:5px; padding:0 5px; font-size:9pt; font-weight:500; color:var(--code-ink); }
+
+  table{ width:100%; border-collapse:separate; border-spacing:0; margin:3mm 0 5mm; font-size:9.5pt; break-inside:avoid; }
+  th{ background:var(--navy); color:#e6eef8; font-weight:700; padding:6px 10px; text-align:right; }
+  th:first-child{ border-radius:0 8px 0 0; } th:last-child{ border-radius:8px 0 0 0; }
+  td{ padding:6px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td{ background:var(--bg-soft); }
+  tr:last-child td:first-child{ border-radius:0 0 8px 0; } tr:last-child td:last-child{ border-radius:0 0 0 8px; }
+  td.c, th.c{ text-align:center; }
+  .pill{ display:inline-block; padding:1px 10px; border-radius:99px; font-size:8.5pt; font-weight:700; white-space:nowrap; }
+  .pill.on{ background:var(--teal-soft); color:var(--teal-ink); }
+  .pill.off{ background:var(--pill-neu-bg); color:var(--pill-neu-ink); }
+  .pill.bull{ background:var(--teal-soft); color:var(--teal-ink); }
+  .pill.bear{ background:var(--red-soft); color:var(--red); }
+  .pill.neu{ background:var(--pill-neu-bg); color:var(--pill-neu-ink); }
+
+  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:4mm; margin:3mm 0 5mm; }
+  .card{ border:1px solid var(--line); border-radius:12px; padding:4mm 5mm; background:var(--surface); break-inside:avoid; }
+  .card .t{ display:flex; align-items:center; gap:8px; font-weight:900; font-size:11pt; color:var(--head); margin-bottom:1.5mm; }
+  .card .t .ic{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11pt; background:var(--teal-soft); }
+  .card p{ font-size:9.5pt; color:var(--body2); margin:0; }
+  .card.accent{ border-right:4px solid var(--teal); }
+
+  .callout{ border-radius:12px; padding:4mm 5mm; margin:4mm 0; font-size:9.8pt; break-inside:avoid; }
+  .callout .ct{ font-weight:900; margin-bottom:1mm; }
+  .callout.tip{ background:var(--tip-bg); color:var(--tip-ink); }
+  .callout.warn{ background:var(--warn-bg); color:var(--warn-ink); }
+  .callout.danger{ background:var(--danger-bg); color:var(--danger-ink); }
+  .callout p{ margin:0; }
+
+  /* diagram */
+  .flow{ display:flex; align-items:stretch; gap:3mm; margin:4mm 0; }
+  .fcol{ flex:1; display:flex; flex-direction:column; gap:2.5mm; }
+  .fbox{ border-radius:10px; padding:3mm; text-align:center; font-size:9pt; font-weight:700; }
+  .fbox small{ display:block; font-weight:500; font-size:8pt; color:inherit; opacity:.75; }
+  .fm{ background:#e8f0fa; color:#173a5e; border:1px solid #c9dcf2; }
+  .fg{ background:var(--amber-soft); color:#78350f; border:1px solid #fde really;}
+  .fgate{ background:var(--amber-soft); color:#78350f; border:1px solid #fcd34d; }
+  .fcons{ background:var(--navy); color:#fff; }
+  .fout{ background:var(--teal-soft); color:var(--teal-ink); border:1px solid #99f6e4; }
+  .farrow{ align-self:center; color:#94a3b8; font-size:14pt; font-weight:900; }
+
+  .steps{ margin:3mm 0; }
+  .step{ display:flex; gap:4mm; margin-bottom:3.5mm; break-inside:avoid; }
+  .step .sn{ flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--navy); color:#5eead4; font-weight:900; display:flex; align-items:center; justify-content:center; font-size:11pt; }
+  .step .sb{ flex:1; }
+  .step .sb .st{ font-weight:900; color:var(--head); }
+  .step .sb p{ margin:0; font-size:9.8pt; }
+
+  .faq{ margin-bottom:3.5mm; break-inside:avoid; }
+  .faq .q{ font-weight:900; color:var(--head); }
+  .faq .q::before{ content:"؟"; display:inline-block; margin-left:6px; color:var(--teal); font-weight:900; }
+  .faq .a{ font-size:9.8pt; color:var(--body2); }
+
+  /* TOC */
+  .toc li{ list-style:none; display:flex; align-items:baseline; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-weight:500; font-size:11pt; }
+  .toc .n{ color:var(--teal); font-weight:900; min-width:24px; }
+  ul.plain{ margin:0 6mm 3mm 0; }
+  ul.plain li{ margin-bottom:1.2mm; }
+
+  /* ---------- SCREEN LAYOUT (print margins come from @page instead) ---------- */
+  @media screen{
+    body{ padding:28px 16px 60px; }
+    section.page{ max-width:840px; margin:0 auto; padding:36px 40px 8px; }
+    section.cover{ width:auto; max-width:840px; height:auto; min-height:640px; margin:0 auto 8px; border-radius:18px; padding:56px 52px; }
+  }
+
+  /* ---------- THEME TOGGLE (screen only) ---------- */
+  #themeToggle{
+    position:fixed; bottom:18px; left:18px; z-index:99; cursor:pointer;
+    width:46px; height:46px; border-radius:50%; border:1px solid var(--line);
+    background:var(--surface); color:var(--head); font-size:19px;
+    box-shadow:0 4px 16px rgba(0,0,0,.18); display:flex; align-items:center; justify-content:center;
+  }
+  @media print{ #themeToggle{ display:none; } }
+
+  /* ---------- DARK MODE (screen only — print/PDF always stays light) ---------- */
+  @media screen{
+    :root[data-theme="dark"]{
+      --ink:#d7e0ec; --muted:#8fa0b5;
+      --line:#26344a; --bg-soft:#131f31;
+      --page:#0b1220; --surface:#111c2e; --head:#e8eef8; --body2:#b6c2d4;
+      --code-bg:#182539; --code-ink:#7cc0ff;
+      --teal-soft:#0d2f2c; --teal-ink:#5eead4;
+      --red:#f87171; --red-soft:#371722;
+      --tip-bg:#0d2f2c; --tip-ink:#a7e3d9;
+      --warn-bg:#33270c; --warn-ink:#f3d9a4;
+      --danger-bg:#391418; --danger-ink:#f3b6bc;
+      --pill-neu-bg:#1d2a3d; --pill-neu-ink:#94a3b8;
+    }
+    :root[data-theme="dark"] th{ background:#1a2a40; }
+    :root[data-theme="dark"] h2.sec .num{ background:#1a2a40; }
+    :root[data-theme="dark"] .step .sn{ background:#1a2a40; }
+    :root[data-theme="dark"] .fm{ background:#152741; color:#a9c6e8; border-color:#254468; }
+    :root[data-theme="dark"] .fgate{ background:#33270c; color:#f3d9a4; border-color:#6b5218; }
+    :root[data-theme="dark"] .fcons{ background:#1a2a40; }
+    :root[data-theme="dark"] .fout{ background:#0d2f2c; color:#5eead4; border-color:#155e56; }
+    :root[data-theme="dark"] .card .t .ic{ background:#16324a; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<section class="cover first">
+  <div class="brand"><span class="dot"></span> اندیکاتور تریدینگ‌ویو · Pine Script v5</div>
+  <div class="mid">
+    <h1>Masiha ICT</h1>
+    <h2>راهنمای کامل اندیکاتور پیش‌بینی جهت کندل بعدی<br>بر پایه مفاهیم ICT</h2>
+    <div class="chips"><span class="chip v">نسخه 2.20</span><span class="chip o">راهنمای کاربری</span></div>
+  </div>
+  <svg class="candles" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg">
+    <g stroke-width="2">
+      <line x1="30" y1="20" x2="30" y2="130" stroke="#2dd4bf"/><rect x="18" y="50" width="24" height="55" rx="3" fill="#14b8a6"/>
+      <line x1="90" y1="35" x2="90" y2="120" stroke="#f87171"/><rect x="78" y="48" width="24" height="42" rx="3" fill="#ef4444"/>
+      <line x1="150" y1="10" x2="150" y2="110" stroke="#2dd4bf"/><rect x="138" y="28" width="24" height="60" rx="3" fill="#14b8a6"/>
+      <line x1="210" y1="30" x2="210" y2="140" stroke="#f87171"/><rect x="198" y="55" width="24" height="58" rx="3" fill="#ef4444"/>
+      <line x1="270" y1="42" x2="270" y2="125" stroke="#2dd4bf"/><rect x="258" y="60" width="24" height="40" rx="3" fill="#14b8a6"/>
+      <line x1="330" y1="18" x2="330" y2="105" stroke="#2dd4bf"/><rect x="318" y="30" width="24" height="52" rx="3" fill="#14b8a6"/>
+      <line x1="390" y1="25" x2="390" y2="128" stroke="#f87171"/><rect x="378" y="44" width="24" height="55" rx="3" fill="#ef4444"/>
+      <line x1="450" y1="8"  x2="450" y2="98"  stroke="#2dd4bf"/><rect x="438" y="20" width="24" height="50" rx="3" fill="#14b8a6"/>
+      <line x1="510" y1="30" x2="510" y2="112" stroke="#2dd4bf"/><rect x="498" y="42" width="24" height="46" rx="3" fill="#14b8a6"/>
+      <line x1="570" y1="15" x2="570" y2="120" stroke="#f87171"/><rect x="558" y="35" width="24" height="52" rx="3" fill="#ef4444"/>
+      <line x1="630" y1="5"  x2="630" y2="95"  stroke="#2dd4bf"/><rect x="618" y="15" width="24" height="48" rx="3" fill="#14b8a6"/>
+    </g>
+  </svg>
+  <div class="foot">
+    <div>راهنمای رسمی کاربر — هماهنگ با نسخه 2.20</div>
+    <div>تیر ۱۴۰۵ / July 2026</div>
+  </div>
+</section>
+
+<!-- ================= TOC ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">☰</span> فهرست مطالب <span class="bar"></span></h2>
+  <ul class="toc">
+    <li><span class="n">۱</span> معرفی</li>
+    <li><span class="n">۲</span> مفاهیم پایه</li>
+    <li><span class="n">۳</span> معماری کلی: سه متد + اجماع</li>
+    <li><span class="n">۴</span> متد ۱ — الگوهای کندلی</li>
+    <li><span class="n">۵</span> موتور FVG</li>
+    <li><span class="n">۶</span> متد ۲ و متد ۳</li>
+    <li><span class="n">۷</span> اجماع و گیت تطبیقی</li>
+    <li><span class="n">۸</span> وین‌ریت‌ها</li>
+    <li><span class="n">۹</span> داشبورد — سطر به سطر</li>
+    <li><span class="n">۱۰</span> مرجع کامل تنظیمات</li>
+    <li><span class="n">۱۱</span> آلرت‌ها</li>
+    <li><span class="n">۱۲</span> روش پیشنهادی استفاده</li>
+    <li><span class="n">۱۳</span> محدودیت‌ها و هشدارها</li>
+    <li><span class="n">۱۴</span> سؤالات متداول</li>
+  </ul>
+</section>
+
+<!-- ================= 1 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱</span> معرفی <span class="bar"></span></h2>
+  <p class="lead"><b>Masiha ICT</b> یک اندیکاتور اورلی (روی چارت) برای TradingView است که هدفش پیش‌بینی جهت <b>کندل بعدی</b> — صعودی یا نزولی — است. این کار با ترکیب سه روش مستقل سیگنال‌دهی و رأی‌گیری بین آن‌ها انجام می‌شود و همزمان دقت تاریخی هر روش به‌صورت زنده اندازه‌گیری می‌شود؛ بنابراین همیشه می‌دانید هر سیگنال در گذشته‌ی نزدیک چقدر قابل اعتماد بوده است.</p>
+  <h3>خروجی‌های اندیکاتور</h3>
+  <div class="cards">
+    <div class="card accent"><div class="t"><span class="ic">▲</span> فلش سبز زیر کندل</div><p>پیش‌بینی صعودی برای کندل بعد</p></div>
+    <div class="card accent"><div class="t"><span class="ic" style="background:var(--red-soft)">▼</span> فلش قرمز بالای کندل</div><p>پیش‌بینی نزولی برای کندل بعد</p></div>
+    <div class="card accent"><div class="t"><span class="ic">▦</span> داشبورد جدولی</div><p>پیش‌بینی لحظه‌ای، رأی متدها و وین‌ریت‌های غلتان</p></div>
+    <div class="card accent"><div class="t"><span class="ic">▭</span> نواحی FVG و لیبل‌ها</div><p>زون‌های FVG روی چارت و لیبل‌های M2/M3 روی کندل‌های واکنش</p></div>
+    <div class="card accent"><div class="t"><span class="ic">🔔</span> دو آلرت آماده</div><p>Consensus Bull و Consensus Bear برای دریافت نوتیفیکیشن</p></div>
+    <div class="card accent"><div class="t"><span class="ic">⚙</span> خودتنظیمی</div><p>گیت تطبیقی، رأی متدهای کم‌دقت را خودکار حذف می‌کند</p></div>
+  </div>
+</section>
+
+<!-- ================= 2 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۲</span> مفاهیم پایه <span class="bar"></span></h2>
+  <p>برای استفاده‌ی درست از اندیکاتور، این مفاهیم را بشناسید:</p>
+  <div class="cards">
+    <div class="card"><div class="t"><span class="ic">◫</span> FVG — شکاف ارزش منصفانه</div>
+      <p>وقتی بازار با قدرت حرکت می‌کند، بین کندل اول و سوم «شکافی» می‌ماند که قیمت آن ناحیه را معامله نکرده است. <b>FVG صعودی (BISI):</b> کف کندل سوم بالاتر از سقف کندل اول — انتظار می‌رود در برگشت، خریدار داشته باشد. <b>FVG نزولی (SIBI):</b> سقف کندل سوم پایین‌تر از کف کندل اول — انتظار فروشنده در برگشت.</p></div>
+    <div class="card"><div class="t"><span class="ic">↥</span> سوییپ (Liquidity Grab)</div>
+      <p>قیمت با شدو از سقف یا کف کندل قبل رد می‌شود اما <b>کلوز به داخل محدوده برمی‌گردد</b>. نقدینگی آن سطح جمع شده ولی قیمت نتوانسته آنجا بماند.</p></div>
+    <div class="card"><div class="t"><span class="ic">▣</span> اینساید بار</div>
+      <p>کندلی که کاملاً داخل محدوده‌ی کندل قبلی جا می‌گیرد؛ نشانه‌ی فشردگی و بی‌تصمیمی بازار.</p></div>
+    <div class="card"><div class="t"><span class="ic">⬌</span> انگالف بدنه‌ای</div>
+      <p>بدنه‌ی کندل (نه شدوها) از هر دو سمت محدوده‌ی کندل قبل عبور می‌کند: اوپن زیر کف قبلی و کلوز بالای سقف قبلی یا برعکس. قوی‌ترین اظهارنظر یک‌کندلی بازار.</p></div>
+    <div class="card"><div class="t"><span class="ic">⚡</span> دیسپلیسمنت</div>
+      <p>حرکت پرقدرت با بدنه‌ی بزرگ. در این اندیکاتور یعنی کندل وسطیِ الگوی FVG باید بدنه‌ای حداقل برابر درصد مشخصی از رنج خودش داشته باشد. FVG بدون دیسپلیسمنت معمولاً بی‌اعتبار است.</p></div>
+    <div class="card"><div class="t"><span class="ic">✛</span> دوجی</div>
+      <p>کندلی که بدنه‌اش نسبت به کل رنجش خیلی کوچک است (پیش‌فرض: کمتر از ۱۰٪). دوجی یعنی بازار تصمیمی نگرفته؛ اندیکاتور روی دوجی سیگنال نمی‌دهد.</p></div>
+  </div>
+</section>
+
+<!-- ================= 3 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۳</span> معماری کلی: سه متد + اجماع <span class="bar"></span></h2>
+  <p>هر سه متد روی <b>کندل بسته‌شده</b> محاسبه می‌شوند و جهت کندل <b>بعدی</b> را پیش‌بینی می‌کنند. هر متد که سیگنال غیرخنثی بدهد یک «رأی» دارد؛ اگر تعداد رأی‌ها به حد نصاب (<code>Min votes</code>) برسد، جهت نهایی از جمع سیگنال‌ها تعیین می‌شود.</p>
+  <div class="flow">
+    <div class="fcol">
+      <div class="fbox fm">متد M1<small>الگوهای کندلی (انگالف، بریک‌اوت، سوییپ، اینساید)</small></div>
+      <div class="fbox fm">متد M2<small>تأیید ۲کندلی بعد از واکنش معتبر به FVG</small></div>
+      <div class="fbox fm">متد M3<small>سوییینگ ۳کندلی بعد از واکنش معتبر به FVG</small></div>
+    </div>
+    <div class="farrow">←</div>
+    <div class="fcol" style="justify-content:center">
+      <div class="fbox fgate">گیت تطبیقی<small>حذف رأیِ متدی که وین‌ریتش از آستانه پایین‌تر رفته</small></div>
+    </div>
+    <div class="farrow">←</div>
+    <div class="fcol" style="justify-content:center">
+      <div class="fbox fcons">اجماع (رأی‌گیری)<small style="color:#9fb3cc">حد نصاب: Min votes</small></div>
+    </div>
+    <div class="farrow">←</div>
+    <div class="fcol" style="justify-content:center">
+      <div class="fbox fout">فلش روی چارت<small>+ آلرت + ردیف Next Candle</small></div>
+    </div>
+  </div>
+  <div class="callout tip"><div class="ct">نکته</div><p>فیلترهای سراسری (سشن، بازه‌ی تاریخی و دوجی) قبل از رأی‌گیری اعمال می‌شوند؛ خارج از سشن یا روی کندل دوجی هیچ متدی رأی نمی‌دهد.</p></div>
+</section>
+
+<!-- ================= 4 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۴</span> متد ۱ — الگوهای کندلی <span class="bar"></span></h2>
+  <p>متد ۱ فقط رابطه‌ی کندل جاری با سقف و کف کندل قبلی را بررسی می‌کند. کیس‌ها به ترتیب اولویت:</p>
+  <table>
+    <tr><th class="c" style="width:8%">#</th><th style="width:18%">کیس</th><th>شرط</th><th style="width:22%">سیگنال</th></tr>
+    <tr><td class="c">۰</td><td><b>دوجی</b></td><td>بدنه کوچکتر از درصد تعیین‌شده از رنج کندل</td><td><span class="pill neu">خنثی</span></td></tr>
+    <tr><td class="c">۱</td><td><b>Engulf</b></td><td>بدنه از هر دو سمت رنج قبلی عبور کرده</td><td>جهت بدنه‌ی کندل</td></tr>
+    <tr><td class="c">۲</td><td><b>Breakout بالا</b></td><td>کلوز بالای سقف کندل قبل</td><td><span class="pill bull">صعودی</span></td></tr>
+    <tr><td class="c">۳</td><td><b>Breakout پایین</b></td><td>کلوز زیر کف کندل قبل</td><td><span class="pill bear">نزولی</span></td></tr>
+    <tr><td class="c">۴</td><td><b>Sweep سقف</b></td><td>شدو بالای سقف قبلی، کلوز داخل رنج</td><td>بسته به منطق سوییپ ↓</td></tr>
+    <tr><td class="c">۵</td><td><b>Sweep کف</b></td><td>شدو زیر کف قبلی، کلوز داخل رنج</td><td>بسته به منطق سوییپ ↓</td></tr>
+    <tr><td class="c">۶</td><td><b>Inside Bar</b></td><td>کندل کاملاً داخل رنج قبلی</td><td>جهت بدنه‌ی کندل</td></tr>
+    <tr><td class="c">۷</td><td>هیچ‌کدام</td><td>—</td><td><span class="pill neu">خنثی</span></td></tr>
+  </table>
+  <h3>منطق سوییپ (تنظیم Sweep direction logic)</h3>
+  <div class="cards">
+    <div class="card"><div class="t"><span class="ic">B</span> Body</div><p>سیگنال از جهت بدنه‌ی همان کندل گرفته می‌شود؛ کندل سبز یعنی صعودی.</p></div>
+    <div class="card"><div class="t"><span class="ic">I</span> Inverted</div><p>تفسیر کلاسیک ICT: سوییپ سقف = نقدینگی بالا جمع شد و برنگشت ← <b>نزولی</b>؛ سوییپ کف ← <b>صعودی</b>. سوییپ همزمان هر دو طرف = خنثی.</p></div>
+  </div>
+  <div class="callout tip"><div class="ct">کدام منطق بهتر است؟</div><p>هیچ‌کدام ذاتاً «درست‌تر» نیست — روی نماد و تایم‌فریم خودتان هر دو را امتحان کنید و ردیف <b>Sweep</b> داشبورد را در دو حالت مقایسه کنید (بخش ۱۲).</p></div>
+  <h3>خاموش/روشن کردن کیس‌ها</h3>
+  <p>در گروه تنظیمات <b>Method 1 - Cases</b> هر چهار خانواده‌ی کیس تیک جداگانه دارد. نکته‌ی مهم: <b>وین‌ریت هر کیس حتی وقتی خاموش است محاسبه و نمایش داده می‌شود</b> (با پسوند «off» در داشبورد). یعنی می‌توانید کیس ضعیف را خاموش کنید ولی همچنان عملکردش را زیر نظر بگیرید و اگر شرایط بازار عوض شد دوباره روشنش کنید.</p>
+</section>
+
+<!-- ================= 5 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۵</span> موتور FVG <span class="bar"></span></h2>
+  <p>چرخه‌ی حیات هر FVG چهار مرحله دارد:</p>
+  <div class="steps">
+    <div class="step"><div class="sn">۱</div><div class="sb"><div class="st">تشخیص</div>
+      <p>یک FVG وقتی ثبت می‌شود که اندازه‌ی گپ حداقل <code>Min FVG size (ticks)</code> باشد؛ در صورت فعال بودن فیلتر دیسپلیسمنت، کندل وسطی الگو بدنه‌ای حداقل برابر <code>Min middle-candle body</code> (پیش‌فرض ۶۰٪) از رنج خودش داشته باشد؛ و داخل سشن و بازه‌ی تاریخی فعال باشد.</p></div></div>
+    <div class="step"><div class="sn">۲</div><div class="sb"><div class="st">انتظار (UNUSED)</div>
+      <p>زون به سمت راست امتداد می‌یابد و منتظر برگشت قیمت می‌ماند.</p></div></div>
+    <div class="step"><div class="sn">۳</div><div class="sb"><div class="st">مصرف (USED)</div>
+      <p>وقتی قیمت به اندازه‌ی <code>Min penetration</code> وارد زون شود یا زون را کامل پر کند، زون مصرف می‌شود و یکی از دو حالت رخ می‌دهد: <b>Respected (احترام):</b> کلوز از سمت دیگر زون عبور نکرده — این کندل «کندل واکنش» است، لیبل زرد M2 می‌گیرد و منبع سیگنال متدهای ۲ و ۳ می‌شود. <b>Disrespected (عدم احترام):</b> کلوز از زون رد شده و زون اعتبار سیگنال‌دهی ندارد.</p></div></div>
+    <div class="step"><div class="sn">۴</div><div class="sb"><div class="st">حذف</div>
+      <p>زون‌های USED بعد از <code>Remove USED FVG after N bars</code> کندل حذف می‌شوند؛ زون‌های خارج از پنجره‌ی <code>lookback</code> نیز پاک می‌شوند. لیبل‌های M2/M3 قدیمی‌تر از <code>History depth</code> هم هر کندل حذف می‌شوند.</p></div></div>
+  </div>
+  <div class="callout warn"><div class="ct">فیلتر تازگی</div><p>اگر <code>Only fresh FVGs can trigger</code> روشن باشد و زون قدیمی‌تر از <code>Max FVG age</code> (پیش‌فرض ۵۰ کندل) باشد، موقع لمس شدن فقط USED می‌شود اما دیگر واکنش معتبر حساب نمی‌شود — زون کهنه ارزش پیش‌بینی ندارد.</p></div>
+</section>
+
+<!-- ================= 6 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۶</span> متد ۲ و متد ۳ <span class="bar"></span></h2>
+  <p>هر دو متد فقط وقتی فعال می‌شوند که <b>در کندل قبلی دقیقاً یک واکنش معتبر (Respected) به FVG</b> رخ داده باشد.</p>
+  <h3>متد ۲ — تأیید دو کندلی</h3>
+  <p>اگر کندل قبل، کندل واکنش بوده و قیمت در کندل جاری زونِ همان واکنش را نقض نکرده باشد (با کلوز، یا با شدو اگر <code>Invalidate M2 on wick</code> روشن باشد)، آنگاه سیگنال M2 برابر سیگنال M1 کندل جاری است.</p>
+  <div class="callout tip"><div class="ct">به بیان ساده</div><p>M2 همان M1 است اما فقط در زمینه‌ی واکنش تازه به یک FVG معتبر — یک فیلتر کیفیت روی متد ۱.</p></div>
+  <h3>متد ۳ — سوییینگ سه‌کندلی</h3>
+  <p>اگر کندل واکنش (کندل قبل) یک سوییینگ سه‌تایی ساخته باشد:</p>
+  <ul class="plain">
+    <li>واکنش صعودی بوده <b>و</b> کندل قبل Swing Low است (کفش از دو کندل مجاورش پایین‌تر) ← <span class="pill bull">سیگنال صعودی</span></li>
+    <li>واکنش نزولی بوده <b>و</b> کندل قبل Swing High است ← <span class="pill bear">سیگنال نزولی</span></li>
+  </ul>
+  <p>وقتی M3 فعال شود، لیبل کندل واکنش از M2 به <b>M3</b> ارتقا می‌یابد.</p>
+</section>
+
+<!-- ================= 7 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۷</span> اجماع و گیت تطبیقی <span class="bar"></span></h2>
+  <h3>رأی‌گیری</h3>
+  <p>هر متدِ روشن که سیگنال غیرصفر بدهد یک رأی دارد. اگر تعداد رأی‌ها ≥ <code>Min votes for consensus</code> باشد، جهت نهایی برابر علامت جمع سه سیگنال است. با <code>Min votes = 1</code> پرسیگنال‌ترین حالت و با <code>3</code> سخت‌گیرترین حالت را دارید.</p>
+  <h3>گیت تطبیقی (Adaptive Gating)</h3>
+  <p>وقتی <code>Gate votes by rolling WinRate</code> روشن باشد، رأی هر متد فقط وقتی شمرده می‌شود که وین‌ریت غلتانش بالای آستانه (<code>Min WinRate %</code>، پیش‌فرض ۵۵٪) باشد. یعنی اندیکاتور <b>خودتنظیم</b> می‌شود: متدی که در شرایط فعلی بازار کار نمی‌کند خودکار از رأی‌گیری کنار می‌رود و وقتی دوباره خوب شد، برمی‌گردد.</p>
+  <ul class="plain">
+    <li><b>دوره‌ی گرم شدن:</b> تا وقتی تعداد نمونه‌های متد به <code>Min samples (N)</code> نرسیده، رأیش آزادانه شمرده می‌شود (وگرنه اندیکاتور در شروع هیچ سیگنالی نمی‌داد).</li>
+    <li>وین‌ریت متدها همیشه روی <b>سیگنال خام</b> (قبل از گیت) اندازه‌گیری می‌شود تا آمار سالم بماند.</li>
+  </ul>
+</section>
+
+<!-- ================= 8 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۸</span> وین‌ریت‌ها <span class="bar"></span></h2>
+  <h3>دو معیار موفقیت (WinRate mode)</h3>
+  <div class="cards">
+    <div class="card"><div class="t"><span class="ic">◉</span> Direction (Close)</div><p>سیگنال وقتی «برد» است که کندل بعدی هم‌جهت با آن <b>کلوز</b> کند. معیار سخت‌گیرانه‌تر؛ مناسب سنجش پیش‌بینی رنگ کندل.</p></div>
+    <div class="card"><div class="t"><span class="ic">⇱</span> Extreme (Break HL)</div><p>سیگنال وقتی برد است که کندل بعدی سقف کندل سیگنال را بشکند (صعودی) یا کفش را (نزولی). معیار نرم‌تر؛ مناسب ورود با استاپ نزدیک.</p></div>
+  </div>
+  <p>با <code>Show WinRate (other)</code> می‌توانید هر دو حالت را همزمان ببینید.</p>
+  <h3>پنجره‌ی غلتان</h3>
+  <p>همه‌ی وین‌ریت‌ها روی <code>lookback</code> کندل اخیر (پیش‌فرض ۳۰۰) محاسبه می‌شوند؛ پس عددها «حالِ» بازار را نشان می‌دهند نه کل تاریخ چارت. کنار هر درصد، <b>N</b> تعداد نمونه‌هاست — بدون N بزرگ به درصد اعتماد نکنید.</p>
+  <h3>سطوح وین‌ریت</h3>
+  <table>
+    <tr><th style="width:35%">سطح</th><th>چه چیزی را اندازه می‌گیرد</th></tr>
+    <tr><td>M1 / M2 / M3</td><td>دقت هر متد جداگانه</td></tr>
+    <tr><td><b>Cons</b></td><td>دقت اجماع نهایی — همان چیزی که با آن تصمیم می‌گیرید؛ <b>مهم‌ترین عدد داشبورد</b></td></tr>
+    <tr><td>Engulf / Break / Sweep / Inside</td><td>دقت تفکیکی کیس‌های متد ۱ — ابزار اصلی بهینه‌سازی</td></tr>
+  </table>
+</section>
+
+<!-- ================= 9 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۹</span> داشبورد — سطر به سطر <span class="bar"></span></h2>
+  <table>
+    <tr><th style="width:32%">ردیف</th><th>معنی</th></tr>
+    <tr><td><b>Next Candle</b></td><td>پیش‌بینی نهایی برای کندل بعد (Bull / Bear / Neutral)</td></tr>
+    <tr><td><b>Votes / Min</b></td><td>تعداد رأی‌های فعلی (بعد از گیت) در برابر حد نصاب</td></tr>
+    <tr><td><b>M1, M2, M3</b></td><td>سیگنال لحظه‌ای هر متد</td></tr>
+    <tr><td><b>M1..Cons (Dir یا BreakHL)</b></td><td>وین‌ریت غلتان متدها و اجماع در حالت اصلی</td></tr>
+    <tr><td>ردیف‌های (other)</td><td>همان وین‌ریت‌ها در حالت دیگر (اختیاری)</td></tr>
+    <tr><td><b>Engulf / Break / Sweep / Inside</b></td><td>وین‌ریت تفکیکی کیس‌های M1؛ کیس خاموش با برچسب «(off)»</td></tr>
+  </table>
+  <div class="cards">
+    <div class="card"><div class="t"><span class="ic" style="background:var(--teal-soft)">■</span> سلول سبز</div><p>وین‌ریت ≥ ۵۰٪</p></div>
+    <div class="card"><div class="t"><span class="ic" style="background:var(--red-soft)">■</span> سلول قرمز</div><p>وین‌ریت &lt; ۵۰٪</p></div>
+  </div>
+  <div class="callout tip"><div class="ct">پیشنهاد</div><p>گزینه‌ی <code>Update dashboard/arrows only on bar close</code> را روشن نگه دارید تا داشبورد و فلش‌ها فقط با بسته شدن کندل به‌روز شوند و وسط کندل تغییر نکنند.</p></div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۰</span> مرجع کامل تنظیمات <span class="bar"></span></h2>
+
+  <h3>View</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:14%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>Show history</td><td class="c"><span class="pill on">روشن</span></td><td>نمایش سیگنال‌های گذشته؛ خاموش = فقط آخرین کندل</td></tr>
+    <tr><td>History depth (last N candles)</td><td class="c">500</td><td>فلش‌ها و لیبل‌های M2/M3 فقط برای N کندل آخر نمایش داده می‌شوند</td></tr>
+    <tr><td>Update only on bar close</td><td class="c"><span class="pill on">روشن</span></td><td>جلوگیری از تغییر سیگنال وسط کندل (ضدریپینت داخل کندلی)</td></tr>
+  </table>
+
+  <h3>Date Filter · Session Filter</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:14%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>Filter to recent days only</td><td class="c"><span class="pill off">خاموش</span></td><td>محدود کردن FVG و وین‌ریت به روزهای اخیر</td></tr>
+    <tr><td>Last N days</td><td class="c">30</td><td>طول پنجره‌ی روزانه</td></tr>
+    <tr><td>Enable session filter</td><td class="c"><span class="pill off">خاموش</span></td><td>فقط در سشن تعیین‌شده سیگنال و FVG تولید می‌شود</td></tr>
+    <tr><td>Session (HHMM-HHMM)</td><td class="c">0930-1600</td><td>بازه‌ی ساعتی + تایم‌زون قابل انتخاب</td></tr>
+  </table>
+
+  <h3>Methods · Method 1 - Cases · Adaptive Gating</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:14%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>Method 1 / 2 / 3</td><td class="c"><span class="pill on">روشن</span></td><td>فعال‌سازی هر متد</td></tr>
+    <tr><td>Min votes for consensus</td><td class="c">1</td><td>حد نصاب رأی برای صدور سیگنال</td></tr>
+    <tr><td>Case: Engulf / Breakout / Sweep / Inside</td><td class="c"><span class="pill on">روشن</span></td><td>خاموش کردن کیس = آن الگو سیگنال نمی‌دهد (آمارش محاسبه می‌ماند)</td></tr>
+    <tr><td>Sweep direction logic</td><td class="c">Body</td><td>Body = جهت بدنه؛ Inverted = خلاف جهت سوییپ (تفسیر کلاسیک ICT)</td></tr>
+    <tr><td>Gate votes by rolling WinRate</td><td class="c"><span class="pill off">خاموش</span></td><td>حذف خودکار رأی متدهای کم‌دقت</td></tr>
+    <tr><td>Min WinRate % to allow votes</td><td class="c">55</td><td>آستانه‌ی دقت</td></tr>
+    <tr><td>Min samples (N) before gating</td><td class="c">30</td><td>حداقل نمونه قبل از اعمال گیت</td></tr>
+  </table>
+
+  <h3>WinRate · Doji tolerance</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:14%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>WinRate mode</td><td class="c">Direction</td><td>معیار اصلی برد (Direction یا Extreme)</td></tr>
+    <tr><td>Invalidate M2 on wick</td><td class="c"><span class="pill off">خاموش</span></td><td>نقض زون با شدو هم M2 را باطل کند (سخت‌گیرانه‌تر)</td></tr>
+    <tr><td>Max body as % of candle range</td><td class="c">10</td><td>کندل با بدنه‌ی کوچکتر از این درصد، دوجی است و سیگنال نمی‌دهد؛ 0 = فیلتر عملاً خاموش</td></tr>
+  </table>
+
+  <h3>FVG - Detection · Consumption</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:14%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>Bullish / Bearish FVG</td><td class="c"><span class="pill on">روشن</span></td><td>فعال‌سازی هر جهت</td></tr>
+    <tr><td>Min FVG size (ticks)</td><td class="c">2</td><td>حداقل اندازه‌ی گپ</td></tr>
+    <tr><td>Require displacement candle</td><td class="c"><span class="pill on">روشن</span></td><td>کندل وسطی الگو باید بدنه‌ی قوی داشته باشد</td></tr>
+    <tr><td>Min middle-candle body (%)</td><td class="c">60</td><td>آستانه‌ی قدرت بدنه</td></tr>
+    <tr><td>Extend UNUSED FVGs</td><td class="c"><span class="pill on">روشن</span></td><td>امتداد زون مصرف‌نشده به راست</td></tr>
+    <tr><td>Min penetration (ticks)</td><td class="c">1</td><td>حداقل نفوذ برای USED شدن</td></tr>
+    <tr><td>Mark USED when fully filled</td><td class="c"><span class="pill on">روشن</span></td><td>پر شدن کامل = USED صرف‌نظر از آستانه‌ی نفوذ</td></tr>
+    <tr><td>Only fresh FVGs can trigger</td><td class="c"><span class="pill on">روشن</span></td><td>زون کهنه واکنش معتبر تولید نمی‌کند</td></tr>
+    <tr><td>Max FVG age (bars)</td><td class="c">50</td><td>آستانه‌ی کهنگی</td></tr>
+  </table>
+
+  <h3>FVG - Lookback · Visibility · Style</h3>
+  <p style="font-size:9.8pt">پنجره‌ی اسکن (پیش‌فرض ۳۰۰ کندل، حداکثر ۴۹۰۰)، مدت نگهداری زون‌های USED، نمایش و رنگ زون‌ها، و اندازه/رنگ لیبل‌های M2/M3 — همگی در گروه‌های مربوطه قابل تنظیم‌اند.</p>
+</section>
+
+<!-- ================= 11 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۱</span> آلرت‌ها <span class="bar"></span></h2>
+  <div class="cards">
+    <div class="card accent"><div class="t"><span class="ic">🔔</span> Consensus Bull</div><p>پیش‌بینی صعودی برای کندل بعد</p></div>
+    <div class="card accent"><div class="t"><span class="ic" style="background:var(--red-soft)">🔔</span> Consensus Bear</div><p>پیش‌بینی نزولی برای کندل بعد</p></div>
+  </div>
+  <h3>نحوه‌ی فعال‌سازی</h3>
+  <div class="steps">
+    <div class="step"><div class="sn">۱</div><div class="sb"><p>در TradingView روی چارت، دکمه‌ی ⏰ Alert را بزنید.</p></div></div>
+    <div class="step"><div class="sn">۲</div><div class="sb"><p>در قسمت Condition، اندیکاتور «Masiha ICT v2.20» و سپس آلرت موردنظر را انتخاب کنید.</p></div></div>
+    <div class="step"><div class="sn">۳</div><div class="sb"><p>حتماً گزینه‌ی <b>«Once Per Bar Close»</b> را انتخاب کنید تا آلرت فقط با بسته شدن کندل صادر شود، نه وسط کندل.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۲</span> روش پیشنهادی استفاده <span class="bar"></span></h2>
+  <p>یک گردش‌کار قدم‌به‌قدم برای گرفتن بیشترین دقت:</p>
+  <div class="steps">
+    <div class="step"><div class="sn">۱</div><div class="sb"><div class="st">راه‌اندازی</div><p>اندیکاتور را با تنظیمات پیش‌فرض روی نماد و تایم‌فریم خودتان بگذارید و <code>Update only on bar close</code> را روشن نگه دارید.</p></div></div>
+    <div class="step"><div class="sn">۲</div><div class="sb"><div class="st">جمع‌آوری آمار</div><p>صبر کنید تا N ردیف‌های وین‌ریت به اعداد معنی‌دار برسد (حداقل ۵۰ تا ۱۰۰ نمونه برای هر ردیفی که می‌خواهید قضاوتش کنید).</p></div></div>
+    <div class="step"><div class="sn">۳</div><div class="sb"><div class="st">ارزیابی کیس‌های M1</div><p>ردیف‌های Engulf / Break / Sweep / Inside را نگاه کنید. هر کیسی که با N قابل قبول زیر ~۵۰٪ است را خاموش کنید. <b>این مؤثرترین بهینه‌سازی اندیکاتور است.</b></p></div></div>
+    <div class="step"><div class="sn">۴</div><div class="sb"><div class="st">تست منطق سوییپ</div><p><code>Sweep direction logic</code> را از Body به Inverted تغییر دهید و بعد از جمع شدن آمار جدید، ردیف Sweep را در دو حالت مقایسه کنید. حالت بهتر را نگه دارید.</p></div></div>
+    <div class="step"><div class="sn">۵</div><div class="sb"><div class="st">کیل‌زون</div><p>فیلتر سشن را روشن کنید و بازه‌ی پرحجم بازارتان را بدهید (مثلاً <code>0930-1130</code> به وقت نیویورک برای شاخص‌های آمریکا). وین‌ریت Cons را با حالت بدون فیلتر مقایسه کنید.</p></div></div>
+    <div class="step"><div class="sn">۶</div><div class="sb"><div class="st">گیت تطبیقی</div><p>وقتی از تنظیمات پایه راضی بودید، <code>Gate votes by rolling WinRate</code> را روشن کنید تا متدهای خارج از فرم خودکار بی‌اثر شوند.</p></div></div>
+    <div class="step"><div class="sn">۷</div><div class="sb"><div class="st">پایش مستمر</div><p>معیار نهایی همیشه ردیف <b>Cons</b> است. اگر بعد از تغییری بهتر نشد، برگردید.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 13 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۳</span> محدودیت‌ها و هشدارها <span class="bar"></span></h2>
+  <div class="callout danger"><div class="ct">این اندیکاتور سیستم معاملاتی کامل نیست</div><p>پیش‌بینی جهت کندل بعدی، جایگزین مدیریت سرمایه، حد ضرر و نسبت سود به زیان نمی‌شود.</p></div>
+  <div class="callout warn"><div class="ct">بازی نزدیک به ۵۰-۵۰ است</div><p>پیش‌بینی رنگ کندل ذاتاً سخت است؛ وین‌ریت پایدار ۵۵ تا ۶۰٪ با N بزرگ یک نتیجه‌ی واقعاً خوب است. به وین‌ریت‌های خیره‌کننده با N کوچک (مثلاً ۷۰٪ با N=25) اعتماد نکنید — به احتمال زیاد نویز آماری است.</p></div>
+  <div class="callout warn"><div class="ct">خطر بیش‌برازش (Overfitting)</div><p>هرچه فیلترهای بیشتری را همزمان دقیق تنظیم کنید، احتمال اینکه تنظیماتتان فقط روی گذشته جواب بدهد بیشتر می‌شود. تغییرات را یکی‌یکی و با آمار کافی ارزیابی کنید.</p></div>
+  <div class="callout tip"><div class="ct">رفتار لحظه‌ای</div><p>با <code>Update only on bar close</code> روشن، سیگنال‌ها فقط روی کندل بسته صادر می‌شوند و ریپینت داخل کندلی ندارید. اگر خاموشش کنید، سیگنال کندلِ در حال تشکیل می‌تواند تا لحظه‌ی بسته شدن تغییر کند.</p></div>
+  <div class="callout warn"><div class="ct">تغییر رژیم بازار</div><p>وین‌ریت‌ها غلتان‌اند و با تأخیر به تغییر شرایط بازار می‌رسند. در خبرهای مهم و نوسانات غیرعادی به اندیکاتور تکیه نکنید.</p></div>
+  <p style="color:var(--muted); font-size:9.5pt">عملکرد گذشته تضمین‌کننده‌ی آینده نیست. مسئولیت هر معامله با خود معامله‌گر است.</p>
+</section>
+
+<!-- ================= 14 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۴</span> سؤالات متداول <span class="bar"></span></h2>
+  <div class="faq"><div class="q">چرا هیچ فلشی نمی‌بینم؟</div><div class="a"><code>Show history</code> و <code>History depth</code> را چک کنید؛ شاید فیلتر سشن/تاریخ روشن است و خارج از بازه هستید؛ یا <code>Min votes</code> بالاست و اجماع شکل نگرفته.</div></div>
+  <div class="faq"><div class="q">چرا وین‌ریت‌ها خط تیره (-) نشان می‌دهند؟</div><div class="a">هنوز هیچ نمونه‌ای در پنجره‌ی غلتان ثبت نشده (N=0). صبر کنید یا <code>lookback</code> را بزرگ‌تر کنید.</div></div>
+  <div class="faq"><div class="q">فلش روی این کندل یعنی چه؟</div><div class="a">یعنی پیش‌بینی برای <b>کندل بعد از آن</b>. فلش سبز زیر کندل X یعنی «انتظار می‌رود کندل X+1 صعودی باشد».</div></div>
+  <div class="faq"><div class="q">لیبل M2 و M3 روی چارت چیست؟</div><div class="a">کندل‌هایی که واکنش معتبر به یک FVG داشته‌اند. M2 یعنی فقط واکنش؛ اگر همان کندل سوییینگ سه‌تایی هم ساخته باشد به M3 ارتقا می‌یابد. این کندل‌ها منبع سیگنال متدهای ۲ و ۳ هستند.</div></div>
+  <div class="faq"><div class="q">چرا با اینکه M1 سیگنال داده، Votes صفر است؟</div><div class="a">احتمالاً گیت تطبیقی روشن است و وین‌ریت M1 زیر آستانه رفته، یا کیس مربوطه در Method 1 - Cases خاموش است، یا خارج از سشن هستید.</div></div>
+  <div class="faq"><div class="q">بهترین تایم‌فریم چیست؟</div><div class="a">اندیکاتور محدودیتی ندارد، اما آمار خودش را دارد: روی هر تایم‌فریمی که استفاده می‌کنید، ردیف Cons با N کافی را ملاک بگیرید.</div></div>
+  <p style="margin-top:8mm; color:var(--muted); font-size:9pt; text-align:center">— Masiha ICT v2.20 · این راهنما با نسخه‌ی 2.20 اندیکاتور هماهنگ است —</p>
+</section>
+
+<button id="themeToggle" title="تغییر تم روشن/تاریک">◐</button>
+<script>
+  (function(){
+    var root = document.documentElement;
+    var urlTheme = new URLSearchParams(location.search).get('theme');
+    var saved = null;
+    try { saved = localStorage.getItem('masiha-manual-theme'); } catch(e){}
+    var system = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    root.dataset.theme = urlTheme || saved || system;
+    document.getElementById('themeToggle').addEventListener('click', function(){
+      var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try { localStorage.setItem('masiha-manual-theme', next); } catch(e){}
+    });
+  })();
+</script>
+</body>
+</html>
