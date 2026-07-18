@@ -1,5 +1,5 @@
 //@version=5
-indicator("Masiha ICT (v2.20)", "Masiha ICT v2.20", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+indicator("Masiha ICT (v2.21)", "Masiha ICT v2.21", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 //==============================
 // VIEW / DATE
@@ -34,6 +34,7 @@ inSess         = not useSess or (sessTzPick == "Exchange" ? not na(time(timefram
 //==============================
 group_dash     = "Dashboard"
 dashPos        = input.string("top_right", "Dashboard position", options=["top_left","top_right","bottom_left","bottom_right"], group=group_dash)
+dashSizeOpt    = input.string("Normal", "Dashboard size", options=["Tiny","Small","Normal","Large"], group=group_dash, tooltip="Text size of the dashboard cells; Small is roughly two-thirds of Normal.")
 rowBgColor     = input.color(color.rgb(184,184,184,50), "Row BG", group=group_dash)
 textColor      = input.color(color.new(color.white, 0), "Text", group=group_dash)
 signalTextColor= input.color(color.new(color.white, 0), "Signal Text", group=group_dash)
@@ -492,8 +493,11 @@ if barstate.isfirst or na(dash) or dashPos != lastPos
     dash := table.new(posFromString(dashPos), 2, num_rows, border_width=1)
     lastPos := dashPos
 
+getDashSize() =>
+    dashSizeOpt == "Tiny" ? size.tiny : dashSizeOpt == "Small" ? size.small : dashSizeOpt == "Large" ? size.large : size.normal
+
 setCell(row, col, txt, bg, fg) =>
-    table.cell(dash, col, row, txt, text_color=fg, bgcolor=bg)
+    table.cell(dash, col, row, txt, text_color=fg, bgcolor=bg, text_size=getDashSize())
 
 bool doTableUpdate = updateOnClose ? barstate.isconfirmed : barstate.islast
 
