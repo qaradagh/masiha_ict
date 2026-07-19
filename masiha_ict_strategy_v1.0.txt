@@ -1,0 +1,306 @@
+//@version=5
+strategy("Masiha ICT Strategy (v1.0)", "Masiha ICT Strat v1.0", overlay=true,
+     initial_capital=10000, pyramiding=0, process_orders_on_close=true,
+     commission_type=strategy.commission.percent, commission_value=0.0, slippage=0)
+
+// Mechanical setup on top of the Masiha ICT v2.22 consensus engine.
+// Stop = signal candle's opposite extreme, Target = signal candle's extreme
+// in the trade direction. Entry either at close (min-R filter) or at a
+// limit priced to guarantee a fixed R. Set commission/slippage in the
+// strategy Properties tab to match your broker.
+
+//==============================
+// TRADE SETUP
+//==============================
+group_trade  = "Trade Setup"
+enableLong   = input.bool(true,  "Enable longs",  group=group_trade)
+enableShort  = input.bool(true,  "Enable shorts", group=group_trade)
+riskPct      = input.float(1.0, "Risk % of equity per trade", minval=0.1, maxval=100.0, step=0.1, group=group_trade)
+entryMode    = input.string("Limit (fixed R)", "Entry mode", options=["Limit (fixed R)","Market (min R filter)"], group=group_trade, tooltip="Limit: order priced inside the signal candle so reward/risk equals exactly R (may not fill). Market: enter on the signal close only when the natural reward/risk is at least R.")
+targetR      = input.float(2.0, "R (reward-to-risk threshold)", minval=0.1, step=0.1, group=group_trade)
+validBars    = input.int(2, "Pending order valid for N candles", minval=1, maxval=50, group=group_trade)
+useTimeExit  = input.bool(true, "Time exit", group=group_trade)
+maxHoldBars  = input.int(10, "Close after N candles in trade", minval=1, maxval=200, group=group_trade)
+
+group_mgmt   = "Trade Management"
+useBE        = input.bool(false, "Move stop to break-even", group=group_mgmt)
+beTrigR      = input.float(1.0, "Break-even trigger (R)", minval=0.1, step=0.1, group=group_mgmt)
+usePartial   = input.bool(false, "Partial take-profit", group=group_mgmt)
+partialPct   = input.float(50.0, "Partial size (% of position)", minval=1.0, maxval=99.0, group=group_mgmt)
+partialR     = input.float(1.0, "Partial level (R)", minval=0.1, step=0.1, group=group_mgmt)
+
+//==============================
+// FILTERS
+//==============================
+group_session = "Session Filter (killzone)"
+useSess       = input.bool(true, "Enable session filter", group=group_session)
+sess          = input.session("0930-1130", "Session (HHMM-HHMM)", group=group_session)
+sessTzPick    = input.string("America/New_York", "Session timezone", options=["Exchange","UTC","America/New_York","Europe/London","Europe/Stockholm","Asia/Tehran"], group=group_session)
+inSess        = not useSess or (sessTzPick == "Exchange" ? not na(time(timeframe.period, sess)) : not na(time(timeframe.period, sess, sessTzPick)))
+
+group_date   = "Date Filter"
+useDateRange = input.bool(false, "Backtest recent days only", group=group_date)
+lastNdays    = input.int(30, "Last N days", minval=1, maxval=3650, group=group_date)
+int dateFromTS = timenow - lastNdays * 86400000
+inDate       = not useDateRange or time >= dateFromTS
+
+group_align  = "MTF Alignment (tick the TFs a trade must agree with)"
+alignD       = input.bool(false, "Daily consensus must match trade direction", group=group_align)
+alignH4      = input.bool(false, "4h consensus must match",  group=group_align)
+alignH1      = input.bool(false, "1h consensus must match",  group=group_align)
+alignM15     = input.bool(false, "15m consensus must match", group=group_align)
+
+//==============================
+// SIGNAL ENGINE SETTINGS (same as indicator v2.22)
+//==============================
+group_methods = "Methods"
+useM1    = input.bool(true, "Method 1", group=group_methods)
+useM2    = input.bool(true, "Method 2 (FVG reaction, 2-candle)", group=group_methods)
+useM3    = input.bool(true, "Method 3 (FVG reaction, 3-swing)",  group=group_methods)
+minVotes = input.int(1, "Min votes for consensus", minval=1, maxval=3, group=group_methods)
+
+group_m1c     = "Method 1 - Cases"
+useCaseEngulf = input.bool(true, "Case: Engulf",   group=group_m1c)
+useCaseBreak  = input.bool(true, "Case: Breakout", group=group_m1c)
+useCaseSweep  = input.bool(true, "Case: Sweep",    group=group_m1c)
+useCaseInside = input.bool(true, "Case: Inside bar", group=group_m1c)
+sweepLogic    = input.string("Body", "Sweep direction logic", options=["Body","Inverted"], group=group_m1c)
+
+group_doji = "Doji tolerance"
+dojiPct    = input.float(10.0, "Max body as % of candle range", step=0.1, minval=0.0, maxval=50.0, group=group_doji)
+
+group_fvg     = "FVG Engine"
+showBull      = input.bool(true, "Bullish FVG (BISI)", group=group_fvg)
+showBear      = input.bool(true, "Bearish FVG (SIBI)", group=group_fvg)
+minFvgTicks   = input.int(2, "Min FVG size (ticks)", minval=0, group=group_fvg)
+useDispFilter = input.bool(true, "Require displacement candle", group=group_fvg)
+dispMinBody   = input.float(60.0, "Min middle-candle body (% of its range)", minval=0.0, maxval=100.0, group=group_fvg)
+ticksNeed     = input.float(1.0, "Min penetration to mark USED (ticks)", step=0.5, minval=0.5, group=group_fvg)
+fullFillOverride = input.bool(true, "Mark USED when fully filled", group=group_fvg)
+fullFillTolTicks = input.int(1, "Full-fill tolerance (ticks)", minval=0, group=group_fvg)
+useFreshFilter = input.bool(true, "Only fresh FVGs can trigger M2/M3", group=group_fvg)
+fvgMaxAge     = input.int(50, "Max FVG age for a valid trigger (bars)", minval=1, group=group_fvg)
+wickInvalid   = input.bool(false, "Invalidate M2 on wick (else close)", group=group_fvg)
+lookback      = input.int(300, "FVG lookback (bars)", minval=50, maxval=4900, group=group_fvg)
+
+//==============================
+// SIGNAL ENGINE (pure, same pipeline as indicator v2.22)
+//==============================
+isDoji() => math.abs(close - open) <= (high - low) * (dojiPct / 100.0)
+dir_up() => close > open
+
+// Returns [signal, case id]; cases: 0=none, 1=Engulf, 2=Breakout, 3=Sweep, 4=Inside
+m1_signal_case() =>
+    float prevH = high[1], prevL = low[1]
+    int sig = 0
+    int cs  = 0
+    if not isDoji()
+        bool bodyCrossBoth = (open < prevL and close > prevH) or (open > prevH and close < prevL)
+        bool closeInside   = (prevL < close and close < prevH)
+        bool sweepHigh     = (high > prevH) and closeInside
+        bool sweepLow      = (low  < prevL) and closeInside
+        bool insideBar     = (high < prevH) and (low > prevL)
+        if bodyCrossBoth
+            sig := dir_up() ? 1 : -1
+            cs  := 1
+        else if close > prevH
+            sig := 1
+            cs  := 2
+        else if close < prevL
+            sig := -1
+            cs  := 2
+        else if sweepHigh or sweepLow
+            cs  := 3
+            if sweepLogic == "Body"
+                sig := dir_up() ? 1 : -1
+            else
+                sig := sweepHigh and sweepLow ? 0 : sweepHigh ? -1 : 1
+        else if insideBar
+            sig := dir_up() ? 1 : -1
+            cs  := 4
+    [sig, cs]
+
+caseEnabled(c) => c == 1 ? useCaseEngulf : c == 2 ? useCaseBreak : c == 3 ? useCaseSweep : c == 4 ? useCaseInside : false
+
+consensus_calc() =>
+    var array<float> fTop  = array.new_float()
+    var array<float> fBot  = array.new_float()
+    var array<int>   fDir  = array.new_int()
+    var array<int>   fX1   = array.new_int()
+    var array<bool>  fUsed = array.new_bool()
+    var array<int>   fTrig = array.new_int()
+    var int prevCount = 0
+    var int prevDir   = 0
+
+    if array.size(fTop) > 0
+        int oldestL = math.max(0, bar_index - lookback)
+        for k = array.size(fTop) - 1 to 0
+            int tg = array.get(fTrig, k)
+            bool stale   = array.get(fX1, k) < oldestL
+            bool usedOld = array.get(fUsed, k) and (na(tg) or tg < bar_index - 1)
+            if stale or usedOld
+                array.remove(fTop,k), array.remove(fBot,k), array.remove(fDir,k)
+                array.remove(fX1,k), array.remove(fUsed,k), array.remove(fTrig,k)
+
+    float midR = high[1] - low[1]
+    bool dOK   = not useDispFilter or (midR > 0 and math.abs(close[1] - open[1]) >= midR * dispMinBody / 100.0)
+    float mGap = syminfo.mintick * minFvgTicks
+    if showBull and dOK and (low - high[2]) >= mGap
+        array.push(fTop, low), array.push(fBot, high[2]), array.push(fDir, 1)
+        array.push(fX1, bar_index - 2), array.push(fUsed, false), array.push(fTrig, na)
+    if showBear and dOK and (low[2] - high) >= mGap
+        array.push(fTop, low[2]), array.push(fBot, high), array.push(fDir, -1)
+        array.push(fX1, bar_index - 2), array.push(fUsed, false), array.push(fTrig, na)
+
+    bool inval = false
+    if array.size(fTrig) > 0
+        for i = 0 to array.size(fTrig) - 1
+            int tb = array.get(fTrig, i)
+            if not na(tb) and tb == bar_index - 1
+                float lb2 = array.get(fBot, i), ub2 = array.get(fTop, i)
+                int d2 = array.get(fDir, i)
+                bool breach = d2 == 1 ? (wickInvalid ? low < lb2 : close < lb2) : (wickInvalid ? high > ub2 : close > ub2)
+                if breach
+                    inval := true
+                    break
+
+    int pBull = 0
+    int pBear = 0
+    float penPx = syminfo.mintick * ticksNeed
+    if array.size(fTop) > 0
+        for i = 0 to array.size(fTop) - 1
+            if not array.get(fUsed, i)
+                float ub = array.get(fTop, i), lb = array.get(fBot, i)
+                float ov = math.max(0.0, math.min(ub, high) - math.max(lb, low))
+                bool fullFill = (ov + syminfo.mintick * fullFillTolTicks) >= (ub - lb)
+                if ov >= penPx or (fullFillOverride and fullFill)
+                    int d = array.get(fDir, i)
+                    bool disr  = (d == 1 and close < lb) or (d == -1 and close > ub)
+                    bool fresh = not useFreshFilter or (bar_index - (array.get(fX1, i) + 2)) <= fvgMaxAge
+                    array.set(fUsed, i, true)
+                    if not disr and fresh
+                        array.set(fTrig, i, bar_index)
+                        if d == 1
+                            pBull += 1
+                        else
+                            pBear += 1
+
+    [m1r, m1c] = m1_signal_case()
+    int m1v = caseEnabled(m1c) ? m1r : 0
+    int m2v = prevCount == 1 and not inval ? m1v : 0
+    int m3v = 0
+    if prevCount == 1
+        bool swL = low[1]  < low[2]  and low[1]  < low
+        bool swH = high[1] > high[2] and high[1] > high
+        m3v := prevDir == 1 and swL ? 1 : prevDir == -1 and swH ? -1 : 0
+    prevCount := pBull + pBear
+    prevDir   := pBull > 0 and pBear > 0 ? 0 : pBull > 0 ? 1 : pBear > 0 ? -1 : 0
+
+    int s1 = useM1 ? m1v : 0
+    int s2 = useM2 ? m2v : 0
+    int s3 = useM3 ? m3v : 0
+    int vts  = (s1 != 0 ? 1 : 0) + (s2 != 0 ? 1 : 0) + (s3 != 0 ? 1 : 0)
+    int ssum = s1 + s2 + s3
+    vts >= minVotes ? (ssum > 0 ? 1 : ssum < 0 ? -1 : 0) : 0
+
+// chart-TF consensus (this instance drives the trades)
+int consNow = consensus_calc()
+
+// locked consensus of the last CLOSED bar of each higher TF (non-repainting)
+get_htf_consensus(tf) =>
+    request.security(syminfo.tickerid, tf, consensus_calc()[1], barmerge.gaps_off, barmerge.lookahead_on)
+
+int mtfD   = get_htf_consensus("D")
+int mtfH4  = get_htf_consensus("240")
+int mtfH1  = get_htf_consensus("60")
+int mtfM15 = get_htf_consensus("15")
+
+// an alignment tick is only meaningful for TFs at or above the chart TF
+bool effD   = alignD   and timeframe.in_seconds() <= timeframe.in_seconds("D")
+bool effH4  = alignH4  and timeframe.in_seconds() <= timeframe.in_seconds("240")
+bool effH1  = alignH1  and timeframe.in_seconds() <= timeframe.in_seconds("60")
+bool effM15 = alignM15 and timeframe.in_seconds() <= timeframe.in_seconds("15")
+
+alignOK(d) =>
+    (not effD   or mtfD   == d) and
+    (not effH4  or mtfH4  == d) and
+    (not effH1  or mtfH1  == d) and
+    (not effM15 or mtfM15 == d)
+
+//==============================
+// ORDER / POSITION MANAGEMENT
+//==============================
+var float pS       = na   // stop level of the working setup
+var float pT       = na   // target level
+var int   orderBar = na   // bar the pending order was placed on
+var int   entryBar = na   // bar the position was opened on
+var bool  beDone   = false
+
+bool flat  = strategy.position_size == 0
+bool inPos = not flat
+
+// track position open/close transitions
+if inPos and na(entryBar)
+    entryBar := bar_index
+if flat
+    entryBar := na
+    beDone   := false
+
+// cancel a stale pending order
+if flat and not na(orderBar) and bar_index - orderBar >= validBars
+    strategy.cancel("EN")
+    orderBar := na
+
+// new signal on a confirmed bar -> place (or replace) the entry order
+int sig = barstate.isconfirmed and inSess and inDate ? consNow : 0
+if flat and sig != 0 and ((sig == 1 and enableLong) or (sig == -1 and enableShort)) and alignOK(sig)
+    float S = sig == 1 ? low  : high
+    float T = sig == 1 ? high : low
+    float rng = math.abs(T - S)
+    if rng > syminfo.mintick
+        if entryMode == "Market (min R filter)"
+            float risk = sig == 1 ? close - S : S - close
+            float rew  = sig == 1 ? T - close : close - T
+            if risk > syminfo.mintick and rew / risk >= targetR
+                float qty = strategy.equity * riskPct / 100.0 / risk
+                strategy.entry("EN", sig == 1 ? strategy.long : strategy.short, qty=qty)
+                pS := S, pT := T, orderBar := bar_index
+        else
+            // limit priced so that reward/risk == targetR exactly
+            float E = (T + targetR * S) / (1.0 + targetR)
+            float riskL = math.abs(E - S)
+            if riskL > syminfo.mintick
+                float qty = strategy.equity * riskPct / 100.0 / riskL
+                bool alreadyThere = sig == 1 ? close <= E : close >= E
+                if alreadyThere
+                    strategy.entry("EN", sig == 1 ? strategy.long : strategy.short, qty=qty)
+                else
+                    strategy.entry("EN", sig == 1 ? strategy.long : strategy.short, qty=qty, limit=E)
+                pS := S, pT := T, orderBar := bar_index
+
+// manage the open position
+if inPos
+    float ep = strategy.position_avg_price
+    bool isLong = strategy.position_size > 0
+    float riskPos = math.abs(ep - pS)
+    if useBE and not beDone and riskPos > 0
+        float trg = isLong ? ep + beTrigR * riskPos : ep - beTrigR * riskPos
+        if (isLong and high >= trg) or (not isLong and low <= trg)
+            beDone := true
+    float stopNow = beDone ? ep : pS
+    if usePartial and riskPos > 0
+        float pLvl = isLong ? ep + partialR * riskPos : ep - partialR * riskPos
+        strategy.exit("TP1", "EN", qty_percent=partialPct, stop=stopNow, limit=pLvl)
+        strategy.exit("TP2", "EN", qty_percent=100, stop=stopNow, limit=pT)
+    else
+        strategy.exit("XT", "EN", stop=stopNow, limit=pT)
+    if useTimeExit and not na(entryBar) and bar_index - entryBar >= maxHoldBars
+        strategy.close("EN", comment="time exit")
+
+//==============================
+// VISUALS
+//==============================
+plotshape(barstate.isconfirmed and sig ==  1, title="Long signal",  style=shape.triangleup,   size=size.tiny, color=color.new(color.lime, 0), location=location.belowbar)
+plotshape(barstate.isconfirmed and sig == -1, title="Short signal", style=shape.triangledown, size=size.tiny, color=color.new(color.red,  0), location=location.abovebar)
+plot(inPos ? pT : na, "Target", color=color.new(color.teal, 0), style=plot.style_linebr, linewidth=1)
+plot(inPos ? (beDone ? strategy.position_avg_price : pS) : na, "Stop", color=color.new(color.red, 0), style=plot.style_linebr, linewidth=1)
