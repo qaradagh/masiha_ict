@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>راهنمای Masiha ICT Strategy v1.1</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<section class="cover first">
+  <div class="brand"><span class="dot"></span> استراتژی تریدینگ‌ویو · Pine Script v5</div>
+  <div class="mid">
+    <h1>Masiha ICT Strategy</h1>
+    <h2>راهنمای استراتژی مکانیکی معامله<br>بر پایه موتور اجماع اندیکاتور Masiha ICT</h2>
+    <div class="chips"><span class="chip v">نسخه 1.1</span><span class="chip o">راهنمای کاربری</span></div>
+  </div>
+  <svg class="candles" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg">
+    <g stroke-width="2">
+      <line x1="30" y1="20" x2="30" y2="130" stroke="#2dd4bf"/><rect x="18" y="50" width="24" height="55" rx="3" fill="#14b8a6"/>
+      <line x1="90" y1="35" x2="90" y2="120" stroke="#f87171"/><rect x="78" y="48" width="24" height="42" rx="3" fill="#ef4444"/>
+      <line x1="150" y1="10" x2="150" y2="110" stroke="#2dd4bf"/><rect x="138" y="28" width="24" height="60" rx="3" fill="#14b8a6"/>
+      <line x1="210" y1="30" x2="210" y2="140" stroke="#f87171"/><rect x="198" y="55" width="24" height="58" rx="3" fill="#ef4444"/>
+      <line x1="270" y1="42" x2="270" y2="125" stroke="#2dd4bf"/><rect x="258" y="60" width="24" height="40" rx="3" fill="#14b8a6"/>
+      <line x1="330" y1="18" x2="330" y2="105" stroke="#2dd4bf"/><rect x="318" y="30" width="24" height="52" rx="3" fill="#14b8a6"/>
+      <line x1="390" y1="25" x2="390" y2="128" stroke="#f87171"/><rect x="378" y="44" width="24" height="55" rx="3" fill="#ef4444"/>
+      <line x1="450" y1="8"  x2="450" y2="98"  stroke="#2dd4bf"/><rect x="438" y="20" width="24" height="50" rx="3" fill="#14b8a6"/>
+      <line x1="510" y1="30" x2="510" y2="112" stroke="#2dd4bf"/><rect x="498" y="42" width="24" height="46" rx="3" fill="#14b8a6"/>
+      <line x1="570" y1="15" x2="570" y2="120" stroke="#f87171"/><rect x="558" y="35" width="24" height="52" rx="3" fill="#ef4444"/>
+      <line x1="630" y1="5"  x2="630" y2="95"  stroke="#2dd4bf"/><rect x="618" y="15" width="24" height="48" rx="3" fill="#14b8a6"/>
+    </g>
+  </svg>
+  <div class="foot">
+    <div>راهنمای رسمی کاربر — هماهنگ با استراتژی نسخه 1.1 و اندیکاتور 2.22</div>
+    <div>تیر ۱۴۰۵ / July 2026</div>
+  </div>
+</section>
+
+<!-- ================= TOC ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">☰</span> فهرست مطالب <span class="bar"></span></h2>
+  <ul class="toc">
+    <li><span class="n">۱</span> معرفی — استراتژی چیست و چه فرقی با اندیکاتور دارد</li>
+    <li><span class="n">۲</span> منطق ستاپ مکانیکی</li>
+    <li><span class="n">۳</span> دو حالت ورود</li>
+    <li><span class="n">۴</span> فیلترها: سشن، تاریخ و هم‌جهتی MTF</li>
+    <li><span class="n">۵</span> مدیریت معامله</li>
+    <li><span class="n">۶</span> سایز پوزیشن و حسابداری R</li>
+    <li><span class="n">۷</span> جدول آمار روی چارت</li>
+    <li><span class="n">۸</span> کار با Strategy Tester</li>
+    <li><span class="n">۹</span> مرجع کامل تنظیمات</li>
+    <li><span class="n">۱۰</span> گردش‌کار بهینه‌یابی</li>
+    <li><span class="n">۱۱</span> محدودیت‌ها و هشدارها</li>
+    <li><span class="n">۱۲</span> سؤالات متداول</li>
+  </ul>
+</section>
+
+<!-- ================= 1 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱</span> معرفی <span class="bar"></span></h2>
+  <p class="lead"><b>Masiha ICT Strategy</b> نسخه‌ی معاملاتیِ اندیکاتور Masiha ICT است: همان موتور سیگنال (FVG ← واکنش ← متدهای M1/M2/M3 ← اجماع)، اما به‌جای نمایش فلش، به‌صورت مکانیکی سفارش می‌گذارد، استاپ و تارگت تعیین می‌کند و نتیجه را در Strategy Tester تریدینگ‌ویو گزارش می‌دهد. هدفش این است که بتوانید بدون دخالت سلیقه، اثر هر تنظیم (تایم‌فریم، سشن، R، فیلتر MTF و…) را با عدد بسنجید.</p>
+  <h3>تفاوت با اندیکاتور</h3>
+  <table>
+    <tr><th style="width:30%"></th><th style="width:35%">اندیکاتور (v2.22)</th><th>استراتژی (v1.1)</th></tr>
+    <tr><td><b>خروجی</b></td><td>فلش، داشبورد، وین‌ریت، آلرت</td><td>سفارش خرید/فروش شبیه‌سازی‌شده + گزارش کامل بک‌تست</td></tr>
+    <tr><td><b>کاربرد</b></td><td>تحلیل، پایش دقت، تصمیم دستی</td><td>بک‌تست و بهینه‌یابی ستاپ مکانیکی</td></tr>
+    <tr><td><b>گیت تطبیقی</b></td><td>دارد</td><td>ندارد (اجماع خام + فیلترهای معاملاتی)</td></tr>
+    <tr><td><b>موتور سیگنال</b></td><td colspan="2">یکسان — تنظیمات مشترک، توضیح کامل در راهنمای اندیکاتور</td></tr>
+  </table>
+  <div class="callout tip"><div class="ct">پیش‌نیاز</div><p>این راهنما فرض می‌کند با منطق سیگنال‌دهی (متدها، FVG، کیس‌های M1) آشنایید. اگر نه، اول راهنمای اندیکاتور را بخوانید — بخش‌های ۲ تا ۷ آن دقیقاً همین موتور را توضیح می‌دهند.</p></div>
+</section>
+
+<!-- ================= 2 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۲</span> منطق ستاپ مکانیکی <span class="bar"></span></h2>
+  <p>چرخه‌ی هر معامله کاملاً قاعده‌مند است و هیچ تصمیم سلیقه‌ای ندارد:</p>
+  <div class="steps">
+    <div class="step"><div class="sn">۱</div><div class="sb"><div class="st">سیگنال</div>
+      <p>روی کندل بسته‌شده، اجماع متدها جهت می‌دهد (همان فلش اندیکاتور). سیگنال باید از فیلتر سشن، فیلتر تاریخ و تیک‌های هم‌جهتی MTF عبور کند و جهتش (لانگ/شورت) فعال باشد.</p></div></div>
+    <div class="step"><div class="sn">۲</div><div class="sb"><div class="st">تعیین سطح‌ها</div>
+      <p><b>استاپ</b> = آن‌طرفِ کندل سیگنال (برای لانگ: کف کندل، برای شورت: سقف کندل). <b>تارگت</b> = این‌طرفِ کندل سیگنال در جهت معامله (برای لانگ: سقف کندل). این دو سطح بعد از ورود هرگز جابه‌جا نمی‌شوند (مگر بریک‌ایون فعال باشد).</p></div></div>
+    <div class="step"><div class="sn">۳</div><div class="sb"><div class="st">سفارش ورود</div>
+      <p>بسته به حالت ورود (بخش ۳)، یا همان لحظه با قیمت بازار وارد می‌شود یا یک سفارش لیمیت داخل رنج کندل سیگنال می‌گذارد. سفارش لیمیت فقط <code>N</code> کندل معتبر است و بعد لغو می‌شود؛ سیگنال جدید هم سفارشِ در انتظار را جایگزین می‌کند.</p></div></div>
+    <div class="step"><div class="sn">۴</div><div class="sb"><div class="st">مدیریت و خروج</div>
+      <p>خروج با استاپ یا تارگت؛ به‌علاوه‌ی گزینه‌های بریک‌ایون، پارشال و خروج زمانی (بخش ۵). در هر لحظه حداکثر یک پوزیشن باز است.</p></div></div>
+  </div>
+  <div class="callout warn"><div class="ct">چرا این ستاپ منطقی است؟</div><p>وین‌ریت «Extreme (Break HL)» اندیکاتور دقیقاً همین رویداد را می‌سنجد: «آیا کندل بعدی سقف/کف کندل سیگنال را می‌زند؟» پس آمار داشبورد اندیکاتور، برآورد اولیه‌ی همین ستاپ است — و Strategy Tester آن را با هزینه‌ها و مدیریت واقعی معامله تکمیل می‌کند.</p></div>
+</section>
+
+<!-- ================= 3 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۳</span> دو حالت ورود <span class="bar"></span></h2>
+  <div class="cards">
+    <div class="card accent"><div class="t"><span class="ic">L</span> Limit (fixed R)</div>
+      <p>سفارش لیمیت در نقطه‌ای داخل رنج کندل سیگنال گذاشته می‌شود که اگر فیل شود، نسبت سود به ضرر <b>دقیقاً برابر R تنظیمی</b> باشد. فرمول نقطه‌ی ورود: <code>E = (T + R×S) / (1 + R)</code> که S استاپ و T تارگت است. با R=2 یعنی ورود در یک‌سومِ نزدیک به استاپ. اگر قیمت کلوز همین حالا آن‌طرف سطح باشد، با قیمت بازار وارد می‌شود.</p></div>
+    <div class="card accent"><div class="t"><span class="ic">M</span> Market (min R filter)</div>
+      <p>روی کلوز کندل سیگنال با قیمت بازار وارد می‌شود، اما فقط وقتی R طبیعیِ همان لحظه (فاصله تا تارگت ÷ فاصله تا استاپ) دست‌کم برابر آستانه باشد. فیل ۱۰۰٪ است ولی R هر معامله متغیر است و خیلی از سیگنال‌ها پشت فیلتر می‌مانند.</p></div>
+  </div>
+  <h3>کدام بهتر است؟ از قبل معلوم نیست</h3>
+  <p>حالت لیمیت یک اثر پنهان دارد: فقط سیگنال‌هایی فیل می‌شوند که قیمت بعد از سیگنال <b>برخلاف جهت</b> تا عمق سفارش برگشته باشد — یعنی نمونه‌ی معاملات «انتخاب معکوس» می‌شود و وین‌ریتِ فیل‌شده‌ها از وین‌ریت خام سیگنال‌ها پایین‌تر است. در عوض R تضمینی جبرانش می‌کند: با R=2 وین‌ریت سربه‌سر فقط ۳۳٪ است. حالت مارکت برعکس، وین‌ریت خام را حفظ می‌کند ولی Rهای کوچک‌تری می‌گیرد. <b>جدول آمار (بخش ۷) دقیقاً برای مقایسه‌ی این دو ساخته شده:</b> Fill rate × Winrate × Avg R را در دو حالت مقایسه کنید.</p>
+</section>
+
+<!-- ================= 4 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۴</span> فیلترها: سشن، تاریخ و هم‌جهتی MTF <span class="bar"></span></h2>
+  <h3>سشن (کیل‌زون)</h3>
+  <p>پیش‌فرض روشن است با بازه‌ی <code>0930-1130</code> به وقت نیویورک — پرحجم‌ترین ساعات شاخص‌های آمریکا. سیگنال خارج از این پنجره کلاً نادیده گرفته می‌شود. بازه و تایم‌زون قابل تغییرند تا کیل‌زون بازار خودتان را پیدا کنید.</p>
+  <h3>فیلتر تاریخ</h3>
+  <p><code>Backtest recent days only</code> + <code>Last N days</code> — همان فیلتر ساده‌ی اندیکاتور. کاربرد اصلی‌اش در بهینه‌یابی است: تنظیمات را روی یک بازه بهینه کنید و روی بازه‌ی دیگری صحت‌سنجی (بخش ۱۰).</p>
+  <h3>هم‌جهتی MTF</h3>
+  <p>چهار تیک مستقل: <b>Daily / 4h / 1h / 15m</b>. هر تیکی که بزنید، معامله فقط وقتی مجاز است که اجماعِ <b>آخرین کندل بسته‌شده</b>‌ی آن تایم‌فریم (همان مقادیر قفل‌شده‌ی پنل MTF اندیکاتور — ضدریپینت) هم‌جهت با معامله باشد. هر ترکیبی مجاز است: فقط Daily، Daily+4h، هر چهارتا، یا هیچ‌کدام.</p>
+  <div class="callout tip"><div class="ct">مبادله‌ی فیلتر و فرصت</div><p>هر تیک اضافه = معامله‌ی کمتر و (احتمالاً) وین‌ریت بالاتر. این مبادله را حدس نزنید — با Strategy Tester اندازه بگیرید: اگر وین‌ریت آن‌قدر بالا نرفت که افت تعداد معامله را جبران کند، آن تیک به ضرر شماست. تیکِ تایم‌فریمِ پایین‌تر از تایم‌فریم چارت خودکار نادیده گرفته می‌شود.</p></div>
+</section>
+
+<!-- ================= 5 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۵</span> مدیریت معامله <span class="bar"></span></h2>
+  <table>
+    <tr><th style="width:32%">ابزار</th><th>رفتار</th></tr>
+    <tr><td><b>اعتبار سفارش</b></td><td>سفارش لیمیتِ فیل‌نشده بعد از <code>N</code> کندل لغو می‌شود (پیش‌فرض ۲). سیگنال جدید همیشه سفارش قبلی را جایگزین می‌کند.</td></tr>
+    <tr><td><b>بریک‌ایون</b></td><td>وقتی قیمت به اندازه‌ی <code>x·R</code> در جهت معامله رفت (پیش‌فرض 1R)، استاپ به نقطه‌ی ورود منتقل می‌شود. ریسک باقی‌مانده صفر می‌شود اما بخشی از معاملات برنده را هم زودتر می‌بندد — هر دو اثر را در بک‌تست ببینید.</td></tr>
+    <tr><td><b>پارشال</b></td><td>درصدی از پوزیشن (پیش‌فرض ۵۰٪) در سطح <code>x·R</code> (پیش‌فرض 1R) بسته می‌شود و بقیه تا تارگت یا استاپ می‌ماند.</td></tr>
+    <tr><td><b>خروج زمانی</b></td><td>اگر بعد از <code>N</code> کندل (پیش‌فرض ۱۰) نه استاپ خورده نه تارگت، پوزیشن با قیمت بازار بسته می‌شود — سرمایه را در معامله‌ی بی‌تصمیم قفل نمی‌کند.</td></tr>
+    <tr><td><b>جهت‌ها</b></td><td>تیک جداگانه برای لانگ و شورت — می‌توانید فقط یک سمت بازار را معامله کنید.</td></tr>
+  </table>
+</section>
+
+<!-- ================= 6 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۶</span> سایز پوزیشن و حسابداری R <span class="bar"></span></h2>
+  <p>حجم هر معامله طوری محاسبه می‌شود که اگر استاپ بخورد، دقیقاً <code>Risk %</code> از موجودی (پیش‌فرض ۱٪) از دست برود: <code>حجم = (موجودی × درصد ریسک) ÷ فاصله‌ی ورود تا استاپ</code>. نتیجه این است که همه‌ی معاملات با هر تایم‌فریم و هر نمادی هم‌وزن می‌شوند و می‌توان عملکرد را بر حسب <b>R</b> خواند: باخت کامل ≈ 1R−، برد کامل با R=2 یعنی 2R+.</p>
+  <div class="callout tip"><div class="ct">چرا R مهم‌تر از درصد سود است؟</div><p>سود انتظاری هر معامله = <code>W×R − (1−W) − هزینه‌ها</code> که W وین‌ریت است. این فرمول به شما می‌گوید سیستم لبه دارد یا نه، مستقل از این که چقدر ریسک می‌کنید. ردیف‌های Net R و Avg R جدول آمار همین را مستقیم گزارش می‌دهند.</p></div>
+</section>
+
+<!-- ================= 7 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۷</span> جدول آمار روی چارت <span class="bar"></span></h2>
+  <p>Strategy Tester سفارش‌های <b>لغوشده</b> را نشان نمی‌دهد؛ بنابراین «نرخ فیل» — که برای مقایسه‌ی دو حالت ورود حیاتی است — از خود گزارش تستر قابل استخراج نیست. جدول گوشه‌ی بالا-چپ چارت این خلأ را پر می‌کند:</p>
+  <table>
+    <tr><th style="width:28%">ردیف</th><th>معنی</th></tr>
+    <tr><td><b>Signals</b></td><td>سیگنال‌هایی که از همه‌ی فیلترها عبور کردند (حتی وقتی پوزیشن باز بود و معامله نشد)</td></tr>
+    <tr><td><b>Orders</b></td><td>سفارش‌هایی که واقعاً ثبت شدند؛ اختلافش با Signals در حالت Market یعنی ردشده‌های فیلتر R</td></tr>
+    <tr><td><b>Fills</b></td><td>پوزیشن‌هایی که واقعاً باز شدند</td></tr>
+    <tr><td><b>Fill rate</b></td><td>Fills ÷ Orders — عدد کلیدی حالت Limit</td></tr>
+    <tr><td><b>Closed</b> و <b>W / L / BE</b></td><td>پوزیشن‌های بسته‌شده با تفکیک برد/باخت/سربه‌سر؛ پارشال‌های یک پوزیشن با هم یک نتیجه حساب می‌شوند</td></tr>
+    <tr><td><b>Winrate</b></td><td>برد ÷ (برد + باخت)</td></tr>
+    <tr><td><b>Net R / Avg R</b></td><td>جمع و میانگین R واقعی معاملات بر مبنای پول در ریسکِ لحظه‌ی ورود</td></tr>
+  </table>
+  <p>با <code>Show stats table</code> خاموش/روشن می‌شود. شمارنده‌ها با هر تغییر اینپوت از صفر و روی کل دیتا دوباره محاسبه می‌شوند، پس هر کانفیگ آمار تمیز خودش را دارد.</p>
+</section>
+
+<!-- ================= 8 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۸</span> کار با Strategy Tester <span class="bar"></span></h2>
+  <div class="steps">
+    <div class="step"><div class="sn">۱</div><div class="sb"><div class="st">افزودن به چارت</div><p>کد را در Pine Editor پیست و Add to chart بزنید — تب Strategy Tester پایین صفحه فعال می‌شود.</p></div></div>
+    <div class="step"><div class="sn">۲</div><div class="sb"><div class="st">تنظیم هزینه‌ها (مهم‌ترین قدم)</div><p>در تب Properties استراتژی، کمیسیون و اسلیپیج واقعی بروکرتان را وارد کنید. روی تایم‌فریم‌های پایین با استاپ‌های تنگ، اسپرد می‌تواند کل لبه را ببلعد — بک‌تست بدون هزینه بی‌اعتبار است.</p></div></div>
+    <div class="step"><div class="sn">۳</div><div class="sb"><div class="st">Bar Magnifier</div><p>وقتی استاپ و تارگت هر دو داخل رنج یک کندل باشند، شبیه‌ساز ترتیب برخورد را از OHLC حدس می‌زند. اگر اکانت Premium دارید، گزینه‌ی «Use bar magnifier» را روشن کنید تا با دیتای ریزتر دقیق شود.</p></div></div>
+    <div class="step"><div class="sn">۴</div><div class="sb"><div class="st">خواندن گزارش</div><p>مهم‌ترین اعداد: <b>تعداد معامله</b> (زیر ~۵۰ قابل اتکا نیست)، <b>Profit factor</b> (بالای ۱.۵ خوب)، <b>Max drawdown</b> (نسبت به بازده بسنجید) و منحنی سرمایه (صعودِ پله‌ایِ یکنواخت بهتر از یک جهش بزرگ است).</p></div></div>
+    <div class="step"><div class="sn">۵</div><div class="sb"><div class="st">تست به تفکیک تایم‌فریم</div><p>تایم‌فریم چارت را عوض کنید — استراتژی روی همان تایم‌فریم اجرا و جداگانه گزارش می‌شود. هر تایم‌فریم شخصیت خودش را دارد؛ نتیجه‌ی ۱ ساعته را به ۵ دقیقه تعمیم ندهید.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 9 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۹</span> مرجع کامل تنظیمات <span class="bar"></span></h2>
+
+  <h3>Trade Setup</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:16%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>Enable longs / shorts</td><td class="c"><span class="pill on">روشن</span></td><td>فعال‌سازی هر جهت معامله</td></tr>
+    <tr><td>Risk % of equity per trade</td><td class="c">1.0</td><td>درصد ریسک هر معامله از موجودی</td></tr>
+    <tr><td>Entry mode</td><td class="c">Limit (fixed R)</td><td>حالت ورود — بخش ۳</td></tr>
+    <tr><td>R (reward-to-risk threshold)</td><td class="c">2.0</td><td>در حالت Limit: نسبت تضمینی؛ در حالت Market: حداقل نسبت قابل قبول</td></tr>
+    <tr><td>Pending order valid for N candles</td><td class="c">2</td><td>عمر سفارش لیمیتِ فیل‌نشده</td></tr>
+    <tr><td>Time exit + Close after N candles</td><td class="c"><span class="pill on">روشن</span> / 10</td><td>بستن پوزیشن بی‌نتیجه بعد از N کندل</td></tr>
+  </table>
+
+  <h3>Trade Management · Stats</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:16%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>Move stop to break-even + trigger (R)</td><td class="c"><span class="pill off">خاموش</span> / 1.0</td><td>انتقال استاپ به ورود بعد از x·R حرکت موافق</td></tr>
+    <tr><td>Partial take-profit + size % + level (R)</td><td class="c"><span class="pill off">خاموش</span> / 50 / 1.0</td><td>بستن بخشی از پوزیشن در سطح تعیین‌شده</td></tr>
+    <tr><td>Show stats table</td><td class="c"><span class="pill on">روشن</span></td><td>جدول آمار بخش ۷</td></tr>
+  </table>
+
+  <h3>Filters</h3>
+  <table>
+    <tr><th style="width:38%">تنظیم</th><th class="c" style="width:16%">پیش‌فرض</th><th>توضیح</th></tr>
+    <tr><td>Session filter + بازه + تایم‌زون</td><td class="c"><span class="pill on">روشن</span> 0930-1130 NY</td><td>معامله فقط در کیل‌زون</td></tr>
+    <tr><td>Backtest recent days only + Last N days</td><td class="c"><span class="pill off">خاموش</span> / 30</td><td>محدودسازی بازه‌ی بک‌تست</td></tr>
+    <tr><td>MTF Alignment: Daily / 4h / 1h / 15m</td><td class="c"><span class="pill off">خاموش</span></td><td>هر تیک، هم‌جهتی با اجماع قفل‌شده‌ی آن تایم‌فریم را اجباری می‌کند</td></tr>
+  </table>
+
+  <h3>موتور سیگنال</h3>
+  <p style="font-size:9.8pt">گروه‌های Methods، Method 1 - Cases، Doji tolerance و FVG Engine عیناً همان تنظیمات اندیکاتور v2.22 هستند — شرح کامل در راهنمای اندیکاتور، بخش‌های ۴ تا ۷ و مرجع تنظیمات. برای مقایسه‌پذیری، این تنظیمات را در اندیکاتور و استراتژی یکسان نگه دارید.</p>
+</section>
+
+<!-- ================= 10 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۰</span> گردش‌کار بهینه‌یابی <span class="bar"></span></h2>
+  <div class="steps">
+    <div class="step"><div class="sn">۱</div><div class="sb"><div class="st">هزینه‌ها را واقعی کنید</div><p>قبل از هر تستی، کمیسیون/اسلیپیج را در Properties وارد کنید.</p></div></div>
+    <div class="step"><div class="sn">۲</div><div class="sb"><div class="st">نمونه را بزرگ کنید</div><p>تا وقتی تعداد معامله زیر ~۵۰ است هیچ نتیجه‌ای نگیرید: سشن را موقتاً پهن‌تر کنید، اعتبار سفارش را بالا ببرید، تایم‌فریم‌های ۱۵ دقیقه و ۱ ساعته را هم تست کنید.</p></div></div>
+    <div class="step"><div class="sn">۳</div><div class="sb"><div class="st">آزمایش حالت ورود</div><p>Limit و Market را با R یکسان مقایسه کنید: Fill rate × Winrate × Avg R × تعداد معامله. برنده معمولاً به نماد و تایم‌فریم بستگی دارد.</p></div></div>
+    <div class="step"><div class="sn">۴</div><div class="sb"><div class="st">جاروی R</div><p>R را روی ۱.۵ / ۲ / ۳ تست کنید. R بالاتر یعنی فیل کمتر (در Limit) یا رد بیشتر (در Market) در ازای سود بیشتر به ازای هر برد.</p></div></div>
+    <div class="step"><div class="sn">۵</div><div class="sb"><div class="st">تیک‌های MTF یکی‌یکی</div><p>هر تیک را جدا اضافه کنید و اثرش را بسنجید؛ بعد ترکیب‌های دوتایی. همه‌چیز را همزمان روشن نکنید.</p></div></div>
+    <div class="step"><div class="sn">۶</div><div class="sb"><div class="st">کیل‌زون را تیون کنید</div><p>چند بازه‌ی سشن را مقایسه کنید — معمولاً یکی دو ساعت اول سشن اصلی بهترین نسبت سیگنال/نویز را دارد.</p></div></div>
+    <div class="step"><div class="sn">۷</div><div class="sb"><div class="st">صحت‌سنجی خارج از نمونه</div><p>با فیلتر تاریخ، تنظیم نهایی را روی بازه‌ای که در بهینه‌سازی نبوده اجرا کنید. اگر نتیجه فروپاشید، بهینه‌سازی‌تان نویز بوده، نه لبه.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 11 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۱</span> محدودیت‌ها و هشدارها <span class="bar"></span></h2>
+  <div class="callout danger"><div class="ct">بک‌تست ≠ آینده</div><p>نتیجه‌ی گذشته تضمین آینده نیست. استراتژی را اول روی حساب دمو و با حجم کم اجرا کنید و رفتار زنده‌اش را با بک‌تست مقایسه کنید.</p></div>
+  <div class="callout warn"><div class="ct">تعداد معامله‌ی کم = نتیجه‌ی بی‌اعتبار</div><p>پروفیت فکتور درخشان با ۱۰-۲۰ معامله می‌تواند شانس خالص باشد. حداقل ۵۰ و ترجیحاً ۱۰۰+ معامله جمع کنید.</p></div>
+  <div class="callout warn"><div class="ct">ابهام درون‌کندلی</div><p>وقتی استاپ و تارگت داخل رنج یک کندل‌اند، شبیه‌ساز ترتیب را حدس می‌زند؛ بدون Bar Magnifier نتایج تایم‌فریم‌های پایین را خوش‌بینانه فرض نکنید.</p></div>
+  <div class="callout warn"><div class="ct">بیش‌برازش</div><p>با این همه اینپوت، می‌شود هر منحنی سرمایه‌ای را «قشنگ» کرد. هر تغییر را جدا بسنجید، دلیلِ منطقی‌اش را بدانید و همیشه خارج از نمونه صحت‌سنجی کنید.</p></div>
+  <div class="callout tip"><div class="ct">دیتای محدود تایم‌فریم‌های پایین</div><p>تریدینگ‌ویو روی تایم‌فریم‌های پایین فقط چند ده هزار کندل به بک‌تست می‌دهد؛ بازه‌ی نمایش‌داده‌شده در تستر را با انتظار خودتان مقایسه کنید.</p></div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section class="page">
+  <h2 class="sec"><span class="num">۱۲</span> سؤالات متداول <span class="bar"></span></h2>
+  <div class="faq"><div class="q">چرا هیچ معامله‌ای ثبت نمی‌شود؟</div><div class="a">فیلتر سشن پیش‌فرض روشن است (0930-1130 نیویورک) — یا خاموشش کنید یا بازه را با بازار خودتان تنظیم کنید. تیک‌های MTF زیاد، جهت‌های غیرفعال و R بالا هم معامله را کم می‌کنند. ردیف Signals جدول آمار را نگاه کنید: اگر صفر است مشکل از فیلترهاست، اگر غیرصفر است مشکل از فیل نشدن سفارش‌ها.</div></div>
+  <div class="faq"><div class="q">چرا تعداد معاملات تستر با ردیف Closed جدول فرق دارد؟</div><div class="a">با پارشال فعال، تستر هر بخش را یک «trade» جدا می‌شمارد ولی جدول آمار کل پوزیشن را یک نتیجه حساب می‌کند — عدد جدول به واقعیت نزدیک‌تر است.</div></div>
+  <div class="faq"><div class="q">نتایجم با اندیکاتور نمی‌خواند — چرا؟</div><div class="a">سه تفاوت طبیعی: استراتژی گیت تطبیقی ندارد؛ سشن پیش‌فرضش روشن است (اندیکاتور خاموش)؛ و وین‌ریت اندیکاتور رویداد «کندل بعدی» را می‌سنجد در حالی که استراتژی فیل شدن، هزینه‌ها و مدیریت معامله را هم حساب می‌کند. تنظیمات موتور را یکسان کنید و اختلاف باقی‌مانده را واقعی بدانید.</div></div>
+  <div class="faq"><div class="q">می‌توانم با این استراتژی معامله‌ی خودکار واقعی بزنم؟</div><div class="a">این نسخه برای بک‌تست و سنجش است. اتصال به بروکر (مثلاً با وب‌هوک آلرت) مرحله‌ی جداگانه‌ای است که فقط بعد از صحت‌سنجی کامل و تست دمو منطقی است.</div></div>
+  <div class="faq"><div class="q">تحلیل تاپ‌داون دستی‌ام را کجای این فرایند بگذارم؟</div><div class="a">تیک‌های MTF نسخه‌ی مکانیکی همان تاپ‌داون هستند. اگر ترجیح می‌دهید دستی تصمیم بگیرید، تیک‌ها را خاموش بگذارید و استراتژی را فقط در جهتی که خودتان تأیید کرده‌اید فعال کنید (Enable longs/shorts).</div></div>
+  <p style="margin-top:8mm; color:var(--muted); font-size:9pt; text-align:center">— Masiha ICT Strategy v1.1 · هماهنگ با اندیکاتور Masiha ICT v2.22 —</p>
+</section>
+
+<button id="themeToggle" title="تغییر تم روشن/تاریک">◐</button>
+<script>
+  (function(){
+    var root = document.documentElement;
+    var urlTheme = new URLSearchParams(location.search).get('theme');
+    var saved = null;
+    try { saved = localStorage.getItem('masiha-manual-theme'); } catch(e){}
+    var system = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    root.dataset.theme = urlTheme || saved || system;
+    document.getElementById('themeToggle').addEventListener('click', function(){
+      var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try { localStorage.setItem('masiha-manual-theme', next); } catch(e){}
+    });
+  })();
+</script>
+</body>
+</html>
