@@ -1,5 +1,5 @@
 //@version=5
-indicator("Masiha ICT (v2.22)", "Masiha ICT v2.22", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+indicator("Masiha ICT (v2.23)", "Masiha ICT v2.23", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 //==============================
 // VIEW / DATE
@@ -605,7 +605,9 @@ posFromString(p) =>
      p == "bottom_left" ? position.bottom_left : position.bottom_right
 
 var string lastPos = ""
-int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)+(showRowCases?4:0)+(anyMtf?1:0)+(rowD?1:0)+(rowH4?1:0)+(rowH1?1:0)+(rowM15?1:0)
+int mtfRows  = (anyMtf?1:0)+(rowD?1:0)+(rowH4?1:0)+(rowH1?1:0)+(rowM15?1:0)
+int num_rows = (showRowNext?1:0)+(showRowVotes?1:0)+(showRowM1?1:0)+(showRowM2?1:0)+(showRowM3?1:0)+(showRowWR?4:0)+(showRowWROther?4:0)+(showRowCases?4:0)+mtfRows
+int mtfStart = num_rows - mtfRows
 var table  dash    = na
 if barstate.isfirst or na(dash) or dashPos != lastPos
     dash := table.new(posFromString(dashPos), 2, num_rows, border_width=1)
@@ -682,23 +684,30 @@ if doTableUpdate
         setCell(r, 0, "Inside" + (useCaseInside ? "" : " (off)"), rowBgColor, textColor)
         setCell(r, 1, na(wrIns) ? "-" : str.tostring(wrIns, "#.0") + "% (N=" + str.tostring(cInsN, "#") + ")", wrIns >= 50 ? bullColor : bearColor, signalTextColor)
         r += 1
-    if anyMtf
-        setCell(r, 0, "", color.new(color.black,100), textColor)
-        setCell(r, 1, "", color.new(color.black,100), textColor)
+
+// MTF rows update LIVE (barstate.islast), unlike the rest of the table:
+// their values are already locked by construction (they only change when
+// the higher TF's candle closes). Writing them only on the chart bar's
+// close would freeze a one-bar-shifted value on the reference TF's own
+// chart, making rows disagree between charts.
+if anyMtf and (barstate.islast or doTableUpdate)
+    int r = mtfStart
+    setCell(r, 0, "", color.new(color.black,100), textColor)
+    setCell(r, 1, "", color.new(color.black,100), textColor)
+    r += 1
+    if rowD
+        setCell(r, 0, "MTF D",   rowBgColor, textColor)
+        setCell(r, 1, sigToText(mtfD),   sigToColor(mtfD),   signalTextColor)
         r += 1
-        if rowD
-            setCell(r, 0, "MTF D",   rowBgColor, textColor)
-            setCell(r, 1, sigToText(mtfD),   sigToColor(mtfD),   signalTextColor)
-            r += 1
-        if rowH4
-            setCell(r, 0, "MTF 240", rowBgColor, textColor)
-            setCell(r, 1, sigToText(mtfH4),  sigToColor(mtfH4),  signalTextColor)
-            r += 1
-        if rowH1
-            setCell(r, 0, "MTF 60",  rowBgColor, textColor)
-            setCell(r, 1, sigToText(mtfH1),  sigToColor(mtfH1),  signalTextColor)
-            r += 1
-        if rowM15
-            setCell(r, 0, "MTF 15",  rowBgColor, textColor)
-            setCell(r, 1, sigToText(mtfM15), sigToColor(mtfM15), signalTextColor)
-            r += 1
+    if rowH4
+        setCell(r, 0, "MTF 240", rowBgColor, textColor)
+        setCell(r, 1, sigToText(mtfH4),  sigToColor(mtfH4),  signalTextColor)
+        r += 1
+    if rowH1
+        setCell(r, 0, "MTF 60",  rowBgColor, textColor)
+        setCell(r, 1, sigToText(mtfH1),  sigToColor(mtfH1),  signalTextColor)
+        r += 1
+    if rowM15
+        setCell(r, 0, "MTF 15",  rowBgColor, textColor)
+        setCell(r, 1, sigToText(mtfM15), sigToColor(mtfM15), signalTextColor)
+        r += 1
