@@ -222,10 +222,11 @@ bool effH1  = alignH1  and timeframe.in_seconds() <= timeframe.in_seconds("60")
 bool effM15 = alignM15 and timeframe.in_seconds() <= timeframe.in_seconds("15")
 
 alignOK(d) =>
-    (not effD   or mtfD   == d) and
-    (not effH4  or mtfH4  == d) and
-    (not effH1  or mtfH1  == d) and
-    (not effM15 or mtfM15 == d)
+    bool okD   = not effD   or mtfD   == d
+    bool okH4  = not effH4  or mtfH4  == d
+    bool okH1  = not effH1  or mtfH1  == d
+    bool okM15 = not effM15 or mtfM15 == d
+    okD and okH4 and okH1 and okM15
 
 //==============================
 // ORDER / POSITION MANAGEMENT
@@ -264,7 +265,9 @@ if flat and sig != 0 and ((sig == 1 and enableLong) or (sig == -1 and enableShor
             if risk > syminfo.mintick and rew / risk >= targetR
                 float qty = strategy.equity * riskPct / 100.0 / risk
                 strategy.entry("EN", sig == 1 ? strategy.long : strategy.short, qty=qty)
-                pS := S, pT := T, orderBar := bar_index
+                pS := S
+                pT := T
+                orderBar := bar_index
         else
             // limit priced so that reward/risk == targetR exactly
             float E = (T + targetR * S) / (1.0 + targetR)
@@ -276,7 +279,9 @@ if flat and sig != 0 and ((sig == 1 and enableLong) or (sig == -1 and enableShor
                     strategy.entry("EN", sig == 1 ? strategy.long : strategy.short, qty=qty)
                 else
                     strategy.entry("EN", sig == 1 ? strategy.long : strategy.short, qty=qty, limit=E)
-                pS := S, pT := T, orderBar := bar_index
+                pS := S
+                pT := T
+                orderBar := bar_index
 
 // manage the open position
 if inPos
