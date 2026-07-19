@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>راهنمای Masiha ICT v2.20</title>
+<title>راهنمای Masiha ICT v2.22</title>
 <style>
   @font-face { font-family:'Vazirmatn'; src:url('fonts/Vazirmatn-400.ttf') format('truetype'); font-weight:400; }
   @font-face { font-family:'Vazirmatn'; src:url('fonts/Vazirmatn-500.ttf') format('truetype'); font-weight:500; }
@@ -168,7 +168,7 @@
   <div class="mid">
     <h1>Masiha ICT</h1>
     <h2>راهنمای کامل اندیکاتور پیش‌بینی جهت کندل بعدی<br>بر پایه مفاهیم ICT</h2>
-    <div class="chips"><span class="chip v">نسخه 2.20</span><span class="chip o">راهنمای کاربری</span></div>
+    <div class="chips"><span class="chip v">نسخه 2.22</span><span class="chip o">راهنمای کاربری</span></div>
   </div>
   <svg class="candles" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg">
     <g stroke-width="2">
@@ -186,7 +186,7 @@
     </g>
   </svg>
   <div class="foot">
-    <div>راهنمای رسمی کاربر — هماهنگ با نسخه 2.20</div>
+    <div>راهنمای رسمی کاربر — هماهنگ با نسخه 2.22</div>
     <div>تیر ۱۴۰۵ / July 2026</div>
   </div>
 </section>
@@ -375,6 +375,7 @@
     <tr><td><b>M1..Cons (Dir یا BreakHL)</b></td><td>وین‌ریت غلتان متدها و اجماع در حالت اصلی</td></tr>
     <tr><td>ردیف‌های (other)</td><td>همان وین‌ریت‌ها در حالت دیگر (اختیاری)</td></tr>
     <tr><td><b>Engulf / Break / Sweep / Inside</b></td><td>وین‌ریت تفکیکی کیس‌های M1؛ کیس خاموش با برچسب «(off)»</td></tr>
+    <tr><td><b>MTF D / 240 / 60 / 15</b></td><td>اجماع (همان رنگ فلش) <b>آخرین کندل بسته‌شده</b>ی آن تایم‌فریم — تا بسته شدن کندل بعدیِ همان تایم‌فریم قفل است و ریپینت نمی‌کند؛ فیلتر سشن و گیت تطبیقی روی آن اعمال نمی‌شود (اجماع خام)</td></tr>
   </table>
   <div class="cards">
     <div class="card"><div class="t"><span class="ic" style="background:var(--teal-soft)">■</span> سلول سبز</div><p>وین‌ریت ≥ ۵۰٪</p></div>
@@ -438,8 +439,8 @@
     <tr><td>Max FVG age (bars)</td><td class="c">50</td><td>آستانه‌ی کهنگی</td></tr>
   </table>
 
-  <h3>FVG - Lookback · Visibility · Style</h3>
-  <p style="font-size:9.8pt">پنجره‌ی اسکن (پیش‌فرض ۳۰۰ کندل، حداکثر ۴۹۰۰)، مدت نگهداری زون‌های USED، نمایش و رنگ زون‌ها، و اندازه/رنگ لیبل‌های M2/M3 — همگی در گروه‌های مربوطه قابل تنظیم‌اند.</p>
+  <h3>FVG - Lookback · Visibility · Style · Dashboard · MTF</h3>
+  <p style="font-size:9.8pt">پنجره‌ی اسکن (پیش‌فرض ۳۰۰ کندل، حداکثر ۴۹۰۰)، مدت نگهداری زون‌های USED، نمایش و رنگ زون‌ها، و اندازه/رنگ لیبل‌های M2/M3 — همگی در گروه‌های مربوطه قابل تنظیم‌اند. اندازه‌ی جدول داشبورد نیز با <code>Dashboard size</code> در چهار سایز Tiny / Small / Normal / Large قابل تغییر است (Small حدوداً دوسوم Normal). پنل MTF با <code>Enable MTF consensus panel</code> روشن/خاموش می‌شود و فقط تایم‌فریم‌های هم‌سطح یا بالاتر از چارت را نشان می‌دهد.</p>
 </section>
 
 <!-- ================= 11 ================= -->
@@ -452,7 +453,7 @@
   <h3>نحوه‌ی فعال‌سازی</h3>
   <div class="steps">
     <div class="step"><div class="sn">۱</div><div class="sb"><p>در TradingView روی چارت، دکمه‌ی ⏰ Alert را بزنید.</p></div></div>
-    <div class="step"><div class="sn">۲</div><div class="sb"><p>در قسمت Condition، اندیکاتور «Masiha ICT v2.20» و سپس آلرت موردنظر را انتخاب کنید.</p></div></div>
+    <div class="step"><div class="sn">۲</div><div class="sb"><p>در قسمت Condition، اندیکاتور «Masiha ICT v2.22» و سپس آلرت موردنظر را انتخاب کنید.</p></div></div>
     <div class="step"><div class="sn">۳</div><div class="sb"><p>حتماً گزینه‌ی <b>«Once Per Bar Close»</b> را انتخاب کنید تا آلرت فقط با بسته شدن کندل صادر شود، نه وسط کندل.</p></div></div>
   </div>
 </section>
@@ -492,7 +493,7 @@
   <div class="faq"><div class="q">لیبل M2 و M3 روی چارت چیست؟</div><div class="a">کندل‌هایی که واکنش معتبر به یک FVG داشته‌اند. M2 یعنی فقط واکنش؛ اگر همان کندل سوییینگ سه‌تایی هم ساخته باشد به M3 ارتقا می‌یابد. این کندل‌ها منبع سیگنال متدهای ۲ و ۳ هستند.</div></div>
   <div class="faq"><div class="q">چرا با اینکه M1 سیگنال داده، Votes صفر است؟</div><div class="a">احتمالاً گیت تطبیقی روشن است و وین‌ریت M1 زیر آستانه رفته، یا کیس مربوطه در Method 1 - Cases خاموش است، یا خارج از سشن هستید.</div></div>
   <div class="faq"><div class="q">بهترین تایم‌فریم چیست؟</div><div class="a">اندیکاتور محدودیتی ندارد، اما آمار خودش را دارد: روی هر تایم‌فریمی که استفاده می‌کنید، ردیف Cons با N کافی را ملاک بگیرید.</div></div>
-  <p style="margin-top:8mm; color:var(--muted); font-size:9pt; text-align:center">— Masiha ICT v2.20 · این راهنما با نسخه‌ی 2.20 اندیکاتور هماهنگ است —</p>
+  <p style="margin-top:8mm; color:var(--muted); font-size:9pt; text-align:center">— Masiha ICT v2.22 · این راهنما با نسخه‌ی 2.22 اندیکاتور هماهنگ است —</p>
 </section>
 
 <button id="themeToggle" title="تغییر تم روشن/تاریک">◐</button>
